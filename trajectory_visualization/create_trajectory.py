@@ -1,14 +1,56 @@
-from hamster_dynamic import get_casadi_model
-import numpy as np
+import types
+
+from hamster_dynamic import Hasmster, get_casadi_model
+from scipy.interpolate import interp1d
 import casadi as ca
 import pandas as pd
+import numpy as np
 from typing import Optional
 import time
 import os
 
 Script_Root = os.path.abspath(os.path.dirname(__file__))
 
-class TIME_OPT_Traj:
+
+class ASTAR_Traj:
+
+    def __init__(self):
+        self.sys = Hasmster()
+        self.path_root = os.path.join(Script_Root, 'DATA')
+        self.path_set = os.listdir(self.path_root)
+        self.the_path = {
+            "s": [],
+            "curvature": []
+        }
+        self.init_state = [0, 0, 0, 0]
+        self.terminal_state = [0, 0, 0, 0]  # s,n,alpha,v
+        self.s_to_curvature = None  # interpolation function
+        self.trajectory = []
+
+    def process_single_case(self, case_name, init_n: float, init_alpha: float):
+        df = pd.read_csv(os.path.join(self.path_root, case_name, "path.csv"))
+        self.the_path["s"] = df["s"]
+        self.the_path["curvature"] = df["curvature"]
+        self.s_to_curvature = interp1d(self.the_path["s"], self.the_path["curvature"])
+        self.init_state = [0, init_n, init_alpha, 0]
+        self.terminal_state = [self.the_path["s"][-1], 0, 0, 0]
+
+    def heuristic(self, state):
+        return np.linalg.norm(state[:3] - self.terminal_state[:3]) + np.abs(state[-1] - self.terminal_state[-1])
+
+    def state_transition(self, state, control, dt):
+        dstate = self.sys.update(state=state, u=control, curvature=self.s_to_curvature(state[0]))
+        return state + dstate * dt
+
+    def a_star(self):
+        pass
+
+    def process_batch_mode(self, init_n: float, init_alpha: float):
+        for case in self.path_set:
+            self.process_single_case(case_name=case, init_n=init_n, init_alpha=init_alpha)
+
+
+class OCP_Traj:
 
     def __init__(self):
         self.model = get_casadi_model()
@@ -18,13 +60,23 @@ class TIME_OPT_Traj:
         self.nu: Optional[int] = 2
         self.path_root = os.path.join(Script_Root, 'DATA', 'path')
         self.path_list = os.listdir(self.path_root)
+        self.path_of_path = []
         self.U_opt: Optional[np.ndarray] = None
         self.X_opt: Optional[np.ndarray] = None
 
+    def create_trajectory(self):
+        trajectory = types.SimpleNamespace()
+        trajectory.U_opt = self.U_opt
+        trajectory.X_opt = self.X_opt
+        trajectory.path_of_path = self.path_of_path
+        trajectory.steps = self.N
+        return trajectory
+
     def process_single_path(self, case_name='circle'):
 
+        self.path_of_path = os.path.join(self.path_root, case_name, 'path.csv')
         # load arc length and curvature
-        df = pd.read_csv(os.path.join(self.path_root, case_name, 'path.csv'))
+        df = pd.read_csv(self.path_of_path)
         s, kappa = list(df["s"].values), list(df["curvature"].values)
 
         # define state and control vector
@@ -53,9 +105,11 @@ class TIME_OPT_Traj:
             ubg.append(0)
 
             # constrain n
-            g.append(X[1, i+1] - 1/curvature)
-            lbg.extend([-ca.inf])
-            ubg.extend([0])
+            # g.append(X[1, i+1] - 1/curvature)
+            g.append(X[1, i + 1] - 0.01)
+            g.append(-0.01 - X[1, i + 1])
+            lbg.extend([-ca.inf]*2)
+            ubg.extend([0]*2)
 
             # constrain alpha
             rotation_tol = np.pi*0.25
@@ -104,8 +158,11 @@ class TIME_OPT_Traj:
         F = ca.Function('F', [U], [X])
         self.X_opt = F(self.U_opt).full()
 
+        return self.create_trajectory()
+
 
 if __name__ == "__main__":
-
-    time_opt = TIME_OPT_Traj()
+    # my_traj_A_star = ASTAR_Traj()
+    # my_traj_A_star.process()
+    time_opt = OCP_Traj()
     time_opt.process_single_path()

@@ -1,15 +1,16 @@
-import pandas as pd
 import numpy as np
 import scipy.integrate as integrate
-from scipy.interpolate import interp1d
+from scipy.interpolate import splrep, splev, interp1d
 from scipy.special import comb
 import os
 from abc import ABC, abstractmethod
 from typing import Optional
+import types
 
 Script_Root = os.path.abspath(os.path.dirname(__file__))
 
-class MyPath:
+
+class PathCreator:
 
     def __init__(self):
         self.steps = 0
@@ -19,19 +20,36 @@ class MyPath:
         self.terminalTheta = 0
         self.arc = []
         self.curvature = []
+        self.phi_curve = []
         self.bezier_points = []
 
-    def create_circle(self, radius=1):
-        arc_length = 1.5 * np.pi * radius
+    def create_path(self):
+        path = types.SimpleNamespace()
+        path.steps = self.steps
+        path.arc = self.arc
+        path.curvature = self.curvature
+        path.phi_curve = self.phi_curve
+        path.initTheta = self.initTheta
+        path.initPos = self.initPos
+        path.terminalTheta = self.terminalTheta
+        path.bezier_points = self.bezier_points
+        return path
+
+    def create_circle(self, factor=1.25, radius=2, initPos=(0,0), initTheta=0):
+        arc_length = factor * np.pi * radius
+        self.initPos = initPos
+        self.initTheta = initTheta
         self.steps = int(arc_length / self.step_length) + 1
         self.arc = [a * self.step_length for a in range(0, self.steps)]
-        self.curvature = [radius] * len(self.arc)
+        self.curvature = [1 / radius] * len(self.arc)
+        self.terminalTheta = initTheta + factor * np.pi
+        self.phi_curve = [s/radius for s in self.arc]
+        return self.create_path()
 
     def create_bezier(self, points: np.ndarray):
+        self.initPos = tuple(points[0,:])
         self.bezier_points = points
-        # bezier = Bezier(points=points)
         bezier = MyBezier(points=points)
-        # bezier = Bezier_normal(points=points)
         self.steps = int(bezier.arc_length / self.step_length) + 1
         uniform_arc = np.linspace(0, bezier.arc_length, self.steps)
         self.arc = uniform_arc
@@ -41,10 +59,14 @@ class MyPath:
         arc_interpolate = np.array(
             [integrate.quad(bezier.cal_norm, 0, t, epsabs=1e-12, epsrel=1e-12, limit=1000)[0] for t in
              t_interpolate])
-        arc_to_t_func = interp1d(arc_interpolate, t_interpolate, kind='cubic')
 
-        uniform_t = arc_to_t_func(uniform_arc)
-        uniform_curve = np.array([bezier.interpolate(t) for t in uniform_t])
+        tck = splrep(arc_interpolate, t_interpolate, k=3)
+        uniform_t_spline = splev(uniform_arc, tck)
+
+        # arc_to_t_func = interp1d(arc_interpolate, t_interpolate, kind='cubic')
+        # uniform_t = arc_to_t_func(uniform_arc)
+
+        uniform_curve = np.array([bezier.interpolate(t) for t in uniform_t_spline])
 
         def cal_curvature(points):
             dx = np.gradient(points[:, 0])
@@ -58,40 +80,13 @@ class MyPath:
         terminalPtr = bezier.derivative(1)
         self.initTheta = np.arctan2(initPtr[1], initPtr[0])
         self.terminalTheta = np.arctan2(terminalPtr[1], terminalPtr[0])
-
-
-# class Bezier:
-#
-#     def __init__(self, points: np.ndarray):
-#         self.control_points = points
-#         self.curve = np.ndarray
-#         self.arc_length = 0
-#         self.create_curve()
-#
-#     def interpolate(self, t: float):
-#         p0, p1, p2, p3 = self.control_points
-#         return (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3 * p3
-#
-#     def derivative(self, t: float):
-#         p0, p1, p2, p3 = self.control_points
-#         derivate_value = -3 * (1 - t) ** 2 * p0 + 3 * (1 - t) ** 2 * p1 - 6 * (1 - t) * t * p1 + 6 * (
-#                 1 - t) * t * p2 - 3 * t ** 2 * p2 + 3 * t ** 2 * p3
-#         return derivate_value
-#
-#     def cal_norm(self, t):
-#         return np.linalg.norm(self.derivative(t))
-#
-#     def create_curve(self):
-#         t = np.linspace(0, 1, 100)
-#         self.curve = np.array([self.interpolate(i) for i in t])
-#         self.arc_length, error = integrate.quad(self.cal_norm, 0, 1, epsabs=1e-12, epsrel=1e-12, limit=1000)
-#         print('created bezier curve with estimated integral error: ', error)
+        return self.create_path()
 
 
 class Bezier_normal:
     """
-    directly using Bezier_normal to generate cure cause high inaccuracy
-    using the formular_generator to get explicit
+    directly using Bezier_normal to generate cure causes high inaccuracy
+    using the formular_generator to get explicit interpolation and derivative function
     """
 
     def __init__(self, points: np.ndarray):
@@ -218,7 +213,7 @@ class MyBezier:
             3: ConcreteBezierN3Creator,
             4: ConcreteBezierN4Creator
         }
-        self.initialize_core(myDic[len(self.control_points)-1]())
+        self.initialize_core(myDic[len(self.control_points) - 1]())
 
     def initialize_core(self, creator: AbstractBezierCreator):
         self.core = creator.get()

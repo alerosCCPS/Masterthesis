@@ -42,12 +42,13 @@ def get_casadi_model():
     model.mass = 1.5  # kg
     model.length_front = 0.125  # m
     model.length_rear = 0.125  # m
-    model.T = 1
+    model.T = 0.1
 
     def dynamic_f(x, u, curvature):
         s, n, alpha, v = x[0], x[1], x[2], x[3]
         v_command, delta = u[0], u[1]
-        beta = np.arctan2(model.length_rear * np.tan(delta), (model.length_rear + model.length_front))
+        # beta = np.arctan2(model.length_rear * np.tan(delta), (model.length_rear + model.length_front))
+        beta = 0.5*delta
         s_dot = v*np.cos(alpha+beta)/(1-n*curvature)
         n_dot = v*np.sin(alpha+beta)
         alpha_dot = v*np.sin(beta)/model.length_rear - curvature*s_dot
@@ -56,15 +57,15 @@ def get_casadi_model():
 
     model.dynamic = dynamic_f
 
-    s = ca.MX.sym("s")
-    n = ca.MX.sym("n")
-    alpha = ca.MX.sym("alpha")
-    v = ca.MX.sym("v")
-    # t_var = ca.MX.sym("t_var")
-    x = ca.vertcat(s, n, alpha, v)
-    v_command, delta = ca.MX.sym("v_command"), ca.MX.sym("delta")
-    u = ca.vertcat(v_command, delta)
-    model.x = x
-    model.u = u
+    # s = ca.MX.sym("s")
+    # n = ca.MX.sym("n")
+    # alpha = ca.MX.sym("alpha")
+    # v = ca.MX.sym("v")
+    # # t_var = ca.MX.sym("t_var")
+    # x = ca.vertcat(s, n, alpha, v)
+    # v_command, delta = ca.MX.sym("v_command"), ca.MX.sym("delta")
+    # u = ca.vertcat(v_command, delta)
+    # model.x = x
+    # model.u = u
 
     return model
