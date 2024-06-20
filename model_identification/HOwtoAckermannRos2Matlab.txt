@@ -1,0 +1,52 @@
+See also the ros2test.m
+
+In order to use the Ackermann commands you have to define the message type in matlab first.
+- you need a working python installation (probably also added to path?). I used version 3.9.something.
+
+
+- you have to create a folder structure: you can do it in matlab with th efollowing commands:
+% folderPath = fullfile(pwd,"customAckermann_msg");
+% packagePath = fullfile(folderPath,"ackermann_msgs");
+% mkdir(packagePath)
+% mkdir(packagePath,"msg")
+% messageDefinition = {'float32 steering_angle', ...
+% 'float32 steering_angle_velocity',...
+% 'float32 speed',...
+% 'float32 acceleration',...
+% 'float32 jerk'};
+%  fileID = fopen(fullfile(packagePath,'msg','AckermannDrive.msg'),'w');
+%  fprintf(fileID,'%s\n',messageDefinition{:});
+%  fclose(fileID);
+% 
+% messageDefinition = {'std_msgs/Header header', ...
+% 'ackermann_msgs/AckermannDrive drive'};
+%  fileID = fopen(fullfile(packagePath,'msg','AckermannDriveStamped.msg'),'w');
+%  fprintf(fileID,'%s\n',messageDefinition{:});
+%  fclose(fileID);
+% 
+% 
+% ros2genmsg(folderPath)
+
+If you get an error like "could not create python environment" or something. you likely have to set the ros toolbox preferences:
+see:
+https://de.mathworks.com/help/ros/gs/ros-system-requirements.html
+
+Starting in R2022b
+
+On the Home tab in the Environment section of the MATLAB toolstrip, click Preferences.
+
+Select ROS Toolbox, click the Open ROS Toolbox Preferences button, and specify the path to the Python executable that you installed in the previous step.
+
+Click Recreate Python Environment.
+
+then the "ros2genmsg" should work
+
+
+Regarding the message definition you find infos here
+http://docs.ros.org/en/melodic/api/ackermann_msgs/html/index-msg.html
+
+NOTES: in messgae definition it is "float32" maybe we want to chang eit to float64. If you send a matlab double it will not work with float32. 
+you have to send for example 
+msg_acker.drive.speed = single(0.5); 
+msg_acker.drive.steering_angle =single(20); % the steering angle here seems to be in deg (at least based on a first testing it seemed so)
+instead
