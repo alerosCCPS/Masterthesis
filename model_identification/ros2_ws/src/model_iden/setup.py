@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'pandas'],
     zip_safe=True,
     maintainer='yangyin',
     maintainer_email='yangyin@todo.todo',
@@ -20,8 +20,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "talker=model_iden.myNode:start_comm_pub",
-            "listener=model_iden.myNode:start_comm_sub"
+            "comm_sub_handle=model_iden.myNode:start_comm_pub",
+            "comm_pub_handle=model_iden.myNode:start_comm_sub",
+            "data_sender_handle=model_iden.myNode:start_data_sender",
+            "mess_sub_handle=model_iden.myNode:start_mess_sub"
         ],
     },
 )

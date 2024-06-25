@@ -7,3 +7,5 @@ def check_path(path):
         print(f"creating path {path}")
         return
     print(f"check path exists {path}")
+
+print(os.path.dirname(__file__))

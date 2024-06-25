@@ -1,21 +1,32 @@
 import numpy as np
 from scipy import signal, optimize
 import matplotlib.pyplot as plt
+from utils import check_path
+import sys
+import os
 
+Script_Root = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.join(Script_Root, ".."))
 
 class Identifier:
 
-    def __init__(self,cutoff_frequency=5, order_filter=4, K=1):
+    def __init__(self, cutoff_frequency=5, order_filter=4, K=1):
         self.x = np.ndarray
         self.y = np.ndarray
         self.filtered = np.ndarray
-        self.sampling_freq = 1
+        self.sampling_freq = 1000  # Hz
         self.fft_freq, self.fft_results = [], []
         self.threshold = 0.6
         self.cutoff_frequency = cutoff_frequency
         self.order_filter = order_filter
         self.K = K
         self.theta = 0
+
+        self.save_root = os.path.join(Script_Root, "results")
+        if not os.path.exists():
+            os.makedirs(self.save_root)
+
+        
 
     def load_data(self, x, y):
         self.x, self.y = x, y
@@ -31,7 +42,7 @@ class Identifier:
         self.fft_freq, self.fft_results = data[0], data[1]
 
     def butterworth_filtering(self):
-        b,a = signal.butter(self.order_filter, self.cutoff_frequency/(0.5*self.sampling_freq), 'low')
+        b, a = signal.butter(self.order_filter, self.cutoff_frequency/(0.5*self.sampling_freq), 'low')
         self.filtered = signal.filtfilt(b, a, self.y)
 
     def fit(self):
