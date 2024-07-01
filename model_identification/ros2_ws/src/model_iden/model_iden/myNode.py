@@ -7,8 +7,8 @@ import pandas as pd
 
 Script_Root = os.path.abspath(os.path.dirname(__file__))
 
-Target_velocity = 1.2  # m/s
-Init_velocity = 0.1  # m/s
+Target_velocity = 0.2  # m/s
+Init_velocity = 0.6  # m/s
 
 
 class CommPub(Node):
@@ -24,19 +24,19 @@ class CommPub(Node):
             1
         )
 
-        self.interlock_pub = self.create_publisher(
-            Bool,
-            '/hamster2/interlock',
-            1
-        )
+        # self.interlock_pub = self.create_publisher(
+        #     Bool,
+        #     '/hamster2/interlock',
+        #     1
+        # )
 
         self.target_velocity = Target_velocity  # m/s
         self.init_velocity = Init_velocity  # m/s
-        self.init_time_period = 1  # s
+        self.init_time_period = 4  # s
         self.start_time = self.get_clock().now()
         self.comm_frequency = 10  # Hz
         self.timer_ack = self.create_timer(1 / self.comm_frequency, self.timer_ack_callback)
-        self.timer_interlock = self.create_timer(0.003, self.timer_interlock_callback)
+        # self.timer_interlock = self.create_timer(0.003, self.timer_interlock_callback)
 
     def timer_ack_callback(self):
         elapsed_time = (self.get_clock().now() - self.start_time).nanoseconds / 1e9

@@ -68,6 +68,9 @@ class DataSplitor:
 if __name__ == "__main__":
 
     ds = DataSplitor()
-    ds.show_raw_data()
-    ds.split_data('velocity', 10, 100)
+    # ds.show_raw_data()
+    ds.split_data('velocity_02_06', 170, 300)
+    ds.split_data('velocity_06_02', 179, 300)
+    ds.split_data('velocity_idle_02_06', 156, 300)
+    ds.split_data('velocity_idle_06_02', 183, 300)
 

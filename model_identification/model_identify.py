@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 from utils import check_path
 import sys
 import os
-
+import glob
+import pandas as pd
+import json
 Script_Root = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(Script_Root, ".."))
 
@@ -22,15 +24,9 @@ class Identifier:
         self.K = K
         self.theta = 0
 
-        self.save_root = os.path.join(Script_Root, "results")
-        if not os.path.exists():
-            os.makedirs(self.save_root)
-
-        
-
     def load_data(self, x, y):
         self.x, self.y = x, y
-        self.sampling_freq = 1/(self.x[1] - self.x[0])
+        # self.sampling_freq = 1/(self.x[1] - self.x[0])
 
     def fft(self):
         # print(self.sampling_freq)
@@ -46,8 +42,8 @@ class Identifier:
         self.filtered = signal.filtfilt(b, a, self.y)
 
     def fit(self):
-        self.butterworth_filtering()
-
+        # self.butterworth_filtering()
+        self.filtered = self.y
         def f(x, theta):
             return self.K*(1 - np.exp(-theta*x))
 
@@ -94,6 +90,34 @@ class Identifier:
         plt.grid(True)
         plt.show()
 
+def process():
+    data_path = os.path.join(Script_Root, 'DATA')
+    data_list = glob.glob(os.path.join(data_path, '*.csv'))
+    print(data_list)
+    save_path = os.path.join(Script_Root, 'results')
+    check_path(save_path)
+    results = {}
+    results_list = []
+    for d in data_list:
+        df = pd.read_csv(d)
+        K = df["K"][0]
+        x = np.array(list(df["time_steps"]))
+        y = np.array(list(df["velocity"]))
+        y = y - y[0]
+        # print(y)
+        identifier = Identifier(K=K)
+        identifier.load_data(x, y)
+        identifier.fit()
+        result = identifier.theta
+        results_list.append(result)
+        results[d] = result
+    results["average"] = sum(results_list) / len(results_list)
+
+    with open(os.path.join(save_path, "results.json"), 'w')as f:
+        json.dump(results, f, indent=4)
+
+
 
 if __name__ == '__main__':
-    Iden = Identifier()
+    # Iden = Identifier()
+    process()

@@ -38,11 +38,11 @@ def get_casadi_model():
     model = types.SimpleNamespace()
     # constrains = types.SimpleNamespace()
     model.steering_limit = deg2R(14)  # 14 degree
-    model.velocity_limit = 1.2  # m/s
+    model.velocity_limit = 0.6  # m/s
     model.mass = 1.5  # kg
     model.length_front = 0.125  # m
     model.length_rear = 0.125  # m
-    model.T = 0.1
+    model.T = 0.00984
 
     def dynamic_f(x, u, curvature):
         s, n, alpha, v = x[0], x[1], x[2], x[3]

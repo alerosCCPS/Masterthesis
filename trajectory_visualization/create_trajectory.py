@@ -55,7 +55,7 @@ class OCP_Traj:
     def __init__(self):
         self.model = get_casadi_model()
         self.dt: Optional[float] = 0.02  # Time step (second)
-        self.N: Optional[int] = 250  # Prediction horizon
+        self.N: Optional[int] = 400  # Prediction horizon
         self.nx: Optional[int] = 4
         self.nu: Optional[int] = 2
         self.path_root = os.path.join(Script_Root, 'DATA', 'path')

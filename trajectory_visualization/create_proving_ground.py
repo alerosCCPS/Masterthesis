@@ -252,12 +252,12 @@ class SimpleTrajPlot:
 
 
 if __name__ == "__main__":
-    plotter = SimplePathPlot('circle')
-    plotter.plot()
-    # traj_creator = OCP_Traj()
-    # traj = traj_creator.process_single_path()
-    # traj_simulator = TrajSim(traj=traj)
-    # traj_simulator.show_traj()
-    # traj_plotter = SimpleTrajPlot()
-    # traj_plotter.plot()
+    # plotter = SimplePathPlot('circle')
+    # plotter.plot()
+    traj_creator = OCP_Traj()
+    traj = traj_creator.process_single_path()
+    traj_simulator = TrajSim(traj=traj)
+    traj_simulator.show_traj()
+    traj_plotter = SimpleTrajPlot()
+    traj_plotter.plot()
 
