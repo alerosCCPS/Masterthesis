@@ -15,7 +15,7 @@ class MPC:
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
         self.hamster, self.constrains = get_hamster_model()
-        self.sim_time, self.controller_freq = 14, 120  # second, Hz
+        self.sim_time, self.controller_freq = 6, 90  # second, Hz
         self.sample_time = 0.1
         self.N = 20
         self.nu = 2
@@ -23,10 +23,10 @@ class MPC:
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
-        self.Q = np.diag([10, 1e-8, 1e-8, 1e-8])
+        self.Q = np.diag([0., 1e-3, 1e-3, 1])
         # self.QN = np.diag([1, 1e-1, 1e-1, 1e-1])
-        self.QN = np.diag([10, 1, 1e-8, 1e-8])
-        self.R = np.diag([1e-3, 50])
+        self.QN = np.diag([0., 1, 1, 1])
+        self.R = np.diag([1e-3, 1])
         self.J = 0
         self.g = []
         self.lbg = []
@@ -63,7 +63,7 @@ class MPC:
 
         # constrain s
         self.lbx[0:self.nx * (self.N + 1):4] = [0] * len(self.lbx[0:self.nx * (self.N + 1):4])
-        self.ubx[0:self.nx * (self.N + 1):4] = [self.constrains.s_limit] * len(self.ubx[0:self.nx * (self.N + 1):4])
+        # self.ubx[0:self.nx * (self.N + 1):4] = [self.constrains.s_limit] * len(self.ubx[0:self.nx * (self.N + 1):4])
 
         # constrain n
         self.lbx[1:self.nx * (self.N + 1):4] = [-self.constrains.n_limit] * len(self.lbx[1:self.nx * (self.N + 1):4])
@@ -86,8 +86,10 @@ class MPC:
         self.ubx[self.nx * (self.N + 1) + 1:: 2] = [self.constrains.delta_limit] * len(self.ubx[self.nx * (self.N + 1) + 1:: 2])
 
     def sim(self):
-        x_init = [0, 0, 0, 0]
-        x_terminal = [self.constrains.s_limit, 0, 0, 0]
+
+        #  x = [s, n, alpha, v]
+        x_init = [0, 0.04, 0.05*np.pi, 0]
+        x_terminal = [0, 0, 0, 0.6]
         self.X_opt.append(np.array(x_init))
         self.U_opt.append(np.zeros(2))
 
@@ -123,6 +125,10 @@ class MPC:
             x_posterior = self.EKF.process(x=x_prior, u=u_prior, z=z_prior)
             p_values[0:self.nx] = x_posterior
 
+            if p_values[0] >= self.constrains.s_limit:
+                print("check point",p_values[0])
+                p_values[0] -= self.constrains.s_limit
+
             self.X_opt.append(states_next.full()[:, 0])
             self.U_opt.append((con[:, 0]))
 
@@ -136,9 +142,11 @@ class MPC:
 
 
 if __name__ == "__main__":
-    mpc = MPC()
+    path_name = 'test_traj'
+    # path_name = 'circle'
+    mpc = MPC(path_name)
     mpc.sim()
-    plo = SimPlotter()
+    plo = SimPlotter(path_name)
     plo.plot_traj()
-    replot = ResultePlotter()
+    replot = ResultePlotter(path_name)
     replot.plot()

@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from scipy.interpolate import splrep, splev
 import pandas as pd
 import numpy as np
@@ -11,36 +12,75 @@ class SimPlotter:
     def __init__(self,path_name='circle'):
         self.casename = path_name
         self.data_path = os.path.join(Script_Root, "DATA", path_name)
-        self.s, self.n = self.load_sim_results()
-        self.path_x, self.path_y, self.phi_on_curve = self.load_path_file()
+        self.s, self.n, self.alpha = [], [], []
+        self.load_sim_results()
+        self.path_x, self.path_y, self.s_limit, self.init_psi = [], [], [], []
+        self.psi_on_curve, self.kappa_on_curve = [], []
+        self.x_ini, self.y_ini = 0,0
+        self.load_path_file()
 
     def load_sim_results(self):
         df = pd.read_csv(os.path.join(self.data_path, 'sim_results.csv'))
-        return df['s'].values, df['n'].values
+        self.s, self.n, self.alpha = df['s'].values, df['n'].values, df['alpha'].values
 
     def load_path_file(self):
         df = pd.read_csv(os.path.join(self.data_path, 'path.csv'))
-        tck = splrep(df['s'].values, df["phi_curve"].values)
-        return df['x'].values, df['y'].values, splev(self.s, tck)
+        self.path_x = df['x'].values
+        self.path_y = df['y'].values
+        self.psi_on_curve = splev(self.s, splrep(df['s'].values, df["psi_curve"].values))
+        self.kappa_on_curve = splev(self.s, splrep(df['s'].values, df['curvature'].values))
+        self.x_ini = splev(self.s[0], splrep(df['s'].values, df['x'].values))
+        self.y_ini = splev(self.s[0], splrep(df['s'].values, df['y'].values))
+        self.s_limit = df['s'].values[-1]
+        # self.init_psi = df['psi_curve'].values[0]
+        self.init_psi = self.psi_on_curve[0]
+
 
     def cal_XY(self):
-        x, y = [self.path_x[0]], [self.path_y[0]]
-        x_c, y_c = self.path_x[0], self.path_y[0]
-
+        psi = self.init_psi
+        x, y = [[self.x_ini], [self.y_ini]]
+        x_c, y_c = self.x_ini, self.y_ini
+        # show_xc, show_yc, show_psi= [], [], []
+        # show_xc.append(x_c)
+        # show_yc.append(y_c)
+        # show_psi.append(self.psi_on_curve[0])
         for i in range(1, len(self.s)):
             ds = self.s[i] - self.s[i-1]
-            x_c += ds * np.cos(self.phi_on_curve[i])
-            y_c += ds * np.sin(self.phi_on_curve[i])
-            x.append(x_c - self.n[i] * np.sin(self.phi_on_curve[i]))
-            y.append(y_c + self.n[i] * np.cos(self.phi_on_curve[i]))
-        return x, y
+            ds = ds + self.s_limit if ds < -1 else ds
+            psi += ds*self.kappa_on_curve[i]
+            x_c += ds * np.cos(psi)
+            y_c += ds * np.sin(psi)
+            # x_c += ds * np.cos(self.psi_on_curve[i])
+            # y_c += ds * np.sin(self.psi_on_curve[i])
+
+            # show_xc.append(x_c)
+            # show_yc.append(y_c)
+            # show_psi.append(self.psi_on_curve[i])
+
+            x.append(x_c - self.n[i] * np.sin(psi))
+            y.append(y_c + self.n[i] * np.cos(psi))
+        # plt.plot(show_xc, show_yc)
+        # plt.show()
+        #
+        # plt.plot([i for i in range(len(show_xc))], show_xc, label='x')
+        # plt.plot([i for i in range(len(show_yc))], show_yc, label='y')
+        # plt.plot([i for i in range(len(show_psi))], show_psi, label='psi')
+        # plt.legend()
+        # plt.show()
+        # data = np.column_stack([np.array(show_xc), np.array(show_yc), np.array(show_psi)])
+        # columns = ['x', 'y', 'psi']
+        # df = pd.DataFrame(data=data, columns=columns)
+        # df.to_csv(os.path.join(Script_Root,"check.csv"), index=False)
+        return x[1:], y[1:]
 
     def plot_traj(self):
         px, py = self.cal_XY()
 
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.plot(self.path_x, self.path_y, linewidth=2, color='black', linestyle="--", alpha=0.3)
-        ax.plot(px, py, linewidth=2, color='blue')
+        ax.plot(px, py, linewidth=1, color='blue')
+        ax.scatter(px[0], py[0], color='green',s=18)
+        ax.scatter(px[-1], py[-1], color='black', s=18)
         ax.set_title(self.casename)
         ax.set_xlabel("X (m)")
         ax.set_ylabel("Y (m)")
@@ -48,6 +88,47 @@ class SimPlotter:
         plt.savefig(os.path.join(self.data_path, "sim_traj.png"))
         plt.show()
         print("saving trajectory in: ", self.data_path)
+
+        #  *****************************************************************************
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(self.path_x, self.path_y, linewidth=2, color='black', linestyle="--", alpha=0.3)
+        ax.scatter(px[0], py[0], color='green',s=18)
+        ax.scatter(px[-1], py[-1], color='black', s=18)
+        twoslope_norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+        cmap = plt.get_cmap("coolwarm")
+        for i in range(len(px) - 1):
+            ax.plot(px[i:i+2], py[i:i+2], linewidth=1, color=cmap(twoslope_norm(self.n[i])))
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=twoslope_norm)
+        sm.set_array([])
+        plt.colorbar(sm, ax=ax, label='n (m)')
+        plt.title("n on test_traj")
+        plt.xlabel("X (m)")
+        plt.ylabel("Y (m)")
+        plt.savefig(os.path.join(self.data_path, "n_on_test_traj.png"))
+        plt.show()
+        print("saving trajectory in: ", self.data_path)
+        #  *****************************************************************************
+
+        #  *****************************************************************************
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(self.path_x, self.path_y, linewidth=2, color='black', linestyle="--", alpha=0.3)
+        ax.scatter(px[0], py[0], color='green', s=18)
+        ax.scatter(px[-1], py[-1], color='black', s=18)
+        twoslope_norm = mcolors.TwoSlopeNorm(vmin=-0.3, vcenter=0, vmax=0.3)
+        cmap = plt.get_cmap("coolwarm")
+        for i in range(len(px) - 1):
+            ax.plot(px[i:i+2], py[i:i+2], linewidth=1, color=cmap(twoslope_norm(self.alpha[i])))
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=twoslope_norm)
+        sm.set_array([])
+        plt.colorbar(sm, ax=ax, label='alpha (rad)')
+        plt.title("alpha on test_traj")
+        plt.xlabel("X (m)")
+        plt.ylabel("Y (m)")
+        plt.savefig(os.path.join(self.data_path, "alpha_on_test_traj.png"))
+        plt.show()
+        print("saving trajectory in: ", self.data_path)
+        #  *****************************************************************************
+
 
 class ResultePlotter:
 
@@ -103,5 +184,8 @@ class ResultePlotter:
         plt.show()
 
 if __name__ == '__main__':
-    replot = ResultePlotter()
-    replot.plot()
+    path_name = 'test_traj'
+    plo = SimPlotter(path_name)
+    plo.plot_traj()
+    # replot = ResultePlotter()
+    # replot.plot()
