@@ -165,8 +165,11 @@ class BezierN3(AbstractBezierProduct):
 
 class BezierN4(AbstractBezierProduct):
     def interpolate(self, p, t):
-        return p[0] * 1.0 * t ** 0 * (1 - t) ** 4 + p[1] * 4.0 * t ** 1 * (1 - t) ** 3 + p[2] * 6.0 * t ** 2 * (
-                1 - t) ** 2 + p[3] * 4.0 * t ** 3 * (1 - t) ** 1 + p[4] * 1.0 * t ** 4 * (1 - t) ** 0
+        return p[0] * 1.0 * t ** 0 * (1 - t) ** 4 + \
+            p[1] * 4.0 * t ** 1 * (1 - t) ** 3 + \
+            p[2] * 6.0 * t ** 2 * (1 - t) ** 2 + \
+            p[3] * 4.0 * t ** 3 * (1 - t) ** 1 + \
+            p[4] * 1.0 * t ** 4 * (1 - t) ** 0
 
     def derivative(self, p, t):
         return (-p[0] * 1.0 * t ** 0 * 4 * (1 - t) ** 3) + p[1] * 4.0 * 1 * t ** (0) * (1 - t) ** 3 + (
@@ -174,6 +177,27 @@ class BezierN4(AbstractBezierProduct):
                 -p[2] * 6.0 * t ** 2 * 2 * (1 - t) ** 1) + p[3] * 4.0 * 3 * t ** (2) * (1 - t) ** 1 + (
                 -p[3] * 4.0 * t ** 3 * 1 * (1 - t) ** 0) + p[4] * 1.0 * 4 * t ** (3) * (1 - t) ** 0
 
+class BezierN5(AbstractBezierProduct):
+    def interpolate(self, p, t):
+        return p[0] * 1.0 * t ** 0 * (1 - t) ** 5 + \
+            p[1] * 5.0 * t ** 1 * (1 - t) ** 4 + \
+            p[2] * 10.0 * t ** 2 * (1 - t) ** 3 + \
+            p[3] * 10.0 * t ** 3 * (1 - t) ** 2 +\
+            p[4] * 5.0 * t ** 4 * (1 - t) ** 1 + \
+            p[5] * 1.0 * t ** 5 * (1 - t) ** 0
+
+
+    def derivative(self, p, t):
+        return (-p[0] * 1.0 * t ** 0 * 5 * (1 - t) ** 4) + \
+            p[1] * 5.0 * 1 * t ** (0) * (1 - t) ** 4 + \
+            (-p[1] * 5.0 * t ** 1 * 4 * (1 - t) ** 3) + \
+            p[2] * 10.0 * 2 * t ** (1) * (1 - t) ** 3 + \
+            (-p[2] * 10.0 * t ** 2 * 3 * (1 - t) ** 2) + \
+            p[3] * 10.0 * 3 * t ** (2) * (1 - t) ** 2 + \
+            (-p[3] * 10.0 * t ** 3 * 2 * (1 - t) ** 1) + \
+            p[4] * 5.0 * 4 * t ** (3) * (1 - t) ** 1 + \
+            (-p[4] * 5.0 * t ** 4 * 1 * (1 - t) ** 0) + \
+            p[5] * 1.0 * 5 * t ** (4) * (1 - t) ** 0
 
 class AbstractBezierCreator(ABC):
 
@@ -198,6 +222,12 @@ class ConcreteBezierN4Creator(AbstractBezierCreator):
         return BezierN4()
 
 
+class ConcreteBezierN5Creator(AbstractBezierCreator):
+
+    def create_bezier(self) -> AbstractBezierProduct:
+        return BezierN5()
+
+
 class MyBezier:
 
     def __init__(self, points: np.ndarray):
@@ -211,7 +241,8 @@ class MyBezier:
     def check_order(self):
         myDic = {
             3: ConcreteBezierN3Creator,
-            4: ConcreteBezierN4Creator
+            4: ConcreteBezierN4Creator,
+            5: ConcreteBezierN5Creator
         }
         self.initialize_core(myDic[len(self.control_points) - 1]())
 
@@ -235,6 +266,6 @@ class MyBezier:
 
 
 if __name__ == "__main__":
-    interpolate, der = Bezier_normal.formular_generator(4)
+    interpolate, der = Bezier_normal.formular_generator(5)
     print(interpolate)
     print(der)

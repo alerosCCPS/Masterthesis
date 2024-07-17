@@ -49,11 +49,18 @@ class PathSim:
     def save_path(self):
         data = {"s": self.path.arc,
                 "curvature": self.path.curvature,
-                "phi_curve": self.path.phi_curve,
+                # "phi_curve": self.path.phi_curve,
                 "initial_pathTheta": self.path.initTheta,
                 "terminal_pathTheta": self.path.terminalTheta,
                 "x": self.x,
                 "y": self.y}
+        print(len(data['s']))
+        print(len(data['curvature']))
+        # print(len(data['phi_curve']))
+        print((data['initial_pathTheta']))
+        print((data['terminal_pathTheta']))
+        print(len(data['x']))
+        print(len(data['y']))
         dataFrame = pd.DataFrame(data)
         dataFrame.to_csv(os.path.join(self.save_root, 'path.csv'), index=False)
 

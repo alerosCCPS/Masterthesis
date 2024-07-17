@@ -1,6 +1,8 @@
 import casadi as ca
 import numpy as np
 import pandas as pd
+from scipy.interpolate import splev, splrep
+import time
 from visualization import SimPlotter, ResultePlotter
 from hamster_dynamic import get_hamster_model
 from ekf import EKF
@@ -11,11 +13,11 @@ Script_Root = os.path.abspath(os.path.dirname(__file__))
 
 class MPC:
 
-    def __init__(self, path_name='circle'):
+    def __init__(self, path_name='test_traj'):
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
-        self.hamster, self.constrains = get_hamster_model()
-        self.sim_time, self.controller_freq = 6, 90  # second, Hz
+        self.hamster, self.constrains = get_hamster_model(path_name)
+        self.sim_time, self.controller_freq = 13.5, 60  # second, Hz
         self.sample_time = 0.1
         self.N = 20
         self.nu = 2
@@ -23,10 +25,10 @@ class MPC:
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
-        self.Q = np.diag([0., 1e-3, 1e-3, 1])
+        self.Q = np.diag([0., 1e-8, 1e-8, 1e-1])
         # self.QN = np.diag([1, 1e-1, 1e-1, 1e-1])
-        self.QN = np.diag([0., 1, 1, 1])
-        self.R = np.diag([1e-3, 1])
+        self.QN = np.diag([0., 1e-8, 1e-8, 1e-1])
+        self.R = np.diag([1e-8, 1e-8])
         self.J = 0
         self.g = []
         self.lbg = []
@@ -35,6 +37,7 @@ class MPC:
         self.ubx = []
         self.U_opt = []
         self.X_opt = []
+        self.time_list = []
         self.setup_nlp()
 
     def setup_nlp(self):
@@ -74,7 +77,7 @@ class MPC:
         self.ubx[2: self.nx * (self.N + 1):4] = [self.constrains.alpha_limit] * len(self.ubx[2: self.nx * (self.N + 1):4])
 
         # constrain v
-        self.lbx[3: self.nx * (self.N + 1): 4] = [0] * len(self.lbx[3: self.nx * (self.N + 1): 4])
+        self.lbx[3: self.nx * (self.N + 1): 4] = [0.2] * len(self.lbx[3: self.nx * (self.N + 1): 4])
         self.ubx[3: self.nx * (self.N + 1): 4] = [self.constrains.v_limit] * len(self.ubx[3: self.nx * (self.N + 1): 4])
 
         # constrain v_comm
@@ -88,22 +91,25 @@ class MPC:
     def sim(self):
 
         #  x = [s, n, alpha, v]
-        x_init = [0, 0.04, 0.05*np.pi, 0]
+        # x_init = [0, 0.04, 0.05*np.pi, 0]
+        x_init = [0, 0, 0, 0]
         x_terminal = [0, 0, 0, 0.6]
-        self.X_opt.append(np.array(x_init))
-        self.U_opt.append(np.zeros(2))
+        # self.X_opt.append(np.array(x_init))
+        # self.U_opt.append(np.zeros(2))
 
         opts = {'ipopt.print_level': 0, 'print_time': False, 'ipopt.tol': 1e-6}
         nlp = {'x': ca.vertcat(ca.reshape(self.X, -1, 1), ca.reshape(self.U, -1, 1)), 'f': self.J,
                'g': self.g, 'p': self.P}
         solver = ca.nlpsol('mpc', 'ipopt', nlp, opts)
 
-        sim_iter = self.sim_time * self.controller_freq
+        sim_iter = int(self.sim_time * self.controller_freq)
         x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
         p_values = x_init + x_terminal
 
         for i in range(sim_iter):
+            start = time.time()
             res = solver(x0=x0, lbx=self.lbx, ubx=self.ubx, lbg=self.lbg, ubg=self.ubg, p=p_values)
+            self.time_list.append(time.time() - start)
 
             x0 = res["x"]
             # states = ca.reshape(x0[0: self.nx * (self.N + 1)], self.nx, self.N + 1).full()
@@ -113,17 +119,17 @@ class MPC:
 
             p_values[0:self.nx] = states_next.full()[:, 0]
 
-            x_prior = p_values[0:self.nx]
-            u_prior = con[:, 0]
-
-            #  adding noise to simulate measured data
-            p_values[0:self.nx] += np.random.normal(0, 0.01, self.nx)
-
-            z_prior = p_values[0:self.nx]
-
-            # Kalman filter
-            x_posterior = self.EKF.process(x=x_prior, u=u_prior, z=z_prior)
-            p_values[0:self.nx] = x_posterior
+            # x_prior = p_values[0:self.nx]
+            # u_prior = con[:, 0]
+            #
+            # #  adding noise to simulate measured data
+            # p_values[0:self.nx] += np.random.normal(0, 0.01, self.nx)
+            #
+            # z_prior = p_values[0:self.nx]
+            #
+            # # Kalman filter
+            # x_posterior = self.EKF.process(x=x_prior, u=u_prior, z=z_prior)
+            # p_values[0:self.nx] = x_posterior
 
             if p_values[0] >= self.constrains.s_limit:
                 print("check point",p_values[0])
@@ -131,12 +137,18 @@ class MPC:
 
             self.X_opt.append(states_next.full()[:, 0])
             self.U_opt.append((con[:, 0]))
+        print("finished simulation")
+        print(f"average cal time: {sum(self.time_list)/len(self.time_list)}")
+        print(f"the worst case: {max(self.time_list)}")
 
         self.save_data()
 
     def save_data(self):
-        data = np.hstack((self.X_opt, self.U_opt))
-        headers = ['s', 'n', 'alpha', 'v', 'v_comm', 'delta']
+        path_df = pd.read_csv(os.path.join(self.save_root, "path.csv"))
+        data = np.hstack((self.X_opt, self.U_opt, np.array(self.time_list).reshape(-1,1)))
+        kappa = splev(data[:,0], splrep(path_df["s"].values, path_df["curvature"]))
+        headers = ["curvature", 's', 'n', 'alpha', 'v', 'v_comm', 'delta', 'time_list']
+        data = np.hstack((np.array(kappa).reshape(-1,1), data))
         df = pd.DataFrame(data=data, columns=headers)
         df.to_csv(os.path.join(self.save_root, 'sim_results.csv'), index=False)
 

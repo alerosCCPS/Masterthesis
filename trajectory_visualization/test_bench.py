@@ -17,12 +17,13 @@ def path_creating_circle():
 
 def path_creating_bezier():
     points = {
-        "path1": np.array([[0,0],[1,0],[1.5,2],[1.5,4]]),  # init_theta=0, terminal_theta=90
-        "path2": np.array([[0, 0], [0, 2], [2, 2], [2, 4]]),  # init_theta=90, terminal_theta=0 , S-form
-        "path3": np.array([[0, 0], [0, 1.5], [1, 4], [2, 4]]),  # init_theta=90, terminal_theta=0
-        "path4": np.array([[0, 0], [1.5, 1.5], [1.5, 2], [0, 3.5]]),  # init_theta=45, terminal_theta=135
-        "path5": np.array([[0, 0], [1, 0], [1, 4], [2, 4]]),  # init_theta=0, terminal_theta=0
-        "test" : np.array([[0, 0], [0, 1.5], [1.5, 0], [2, 2], [2,4]])  # init_theta=90, terminal_theta=90
+        # "path1": np.array([[0,0],[1,0],[1.5,2],[1.5,4]]),  # init_theta=0, terminal_theta=90
+        # "path2": np.array([[0, 0], [0, 2], [2, 2], [2, 4]]),  # init_theta=90, terminal_theta=0 , S-form
+        # "path3": np.array([[0, 0], [0, 1.5], [1, 4], [2, 4]]),  # init_theta=90, terminal_theta=0
+        # "path4": np.array([[0, 0], [1.5, 1.5], [1.5, 2], [0, 3.5]]),  # init_theta=45, terminal_theta=135
+        # "path5": np.array([[0, 0], [1, 0], [1, 4], [2, 4]]),  # init_theta=0, terminal_theta=0
+        "arc_up" : np.array([[3.5, 0], [4, 2.5], [1, 4],[-1, 4], [-4, 2.5], [-3.5,0]]),  # init_theta=90, terminal_theta=90
+        # "arc_down": np.array([[-3.5, 0], [-1.5, -3], [-0.5, 0.5], [0.5, 0.5], [1.5, -3], [3.5, 0]])  # init_theta=90, terminal_theta=90
     }
     for name, p in points.items():
         path_creator = PathCreator()
@@ -34,8 +35,8 @@ def path_creating_bezier():
 
 if __name__ =="__main__":
     # path_creating_circle()
-    # path_creating_bezier()
-    traj_creator = OCP_Traj()
-    traj = traj_creator.process_single_path()
-    traj_simulator = TrajSim(traj=traj)
-    traj_simulator.show_traj()
+    path_creating_bezier()
+    # traj_creator = OCP_Traj()
+    # traj = traj_creator.process_single_path()
+    # traj_simulator = TrajSim(traj=traj)
+    # traj_simulator.show_traj()

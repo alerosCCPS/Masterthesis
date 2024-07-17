@@ -9,26 +9,26 @@ Script_Root = os.path.abspath(os.path.dirname(__file__))
 
 class SimPlotter:
 
-    def __init__(self,path_name='circle'):
+    def __init__(self,path_name='test_traj'):
         self.casename = path_name
         self.data_path = os.path.join(Script_Root, "DATA", path_name)
-        self.s, self.n, self.alpha, self.kappa_on_curve = [], [], [], []
+        self.s, self.n, self.alpha = [], [], []
         self.load_sim_results()
         self.path_x, self.path_y, self.s_limit, self.init_psi = [], [], [], []
-        self.psi_on_curve = []
+        self.psi_on_curve, self.kappa_on_curve = [], []
         self.x_ini, self.y_ini = 0,0
         self.load_path_file()
 
     def load_sim_results(self):
-        df = pd.read_csv(os.path.join(self.data_path, 'sim_results.csv'))
-        self.s, self.n, self.alpha, self.kappa_on_curve = df['s'].values, df['n'].values, df['alpha'].values, df["curvature"].values
+        df = pd.read_csv(os.path.join(self.data_path, 'gp_sim_results.csv'))
+        self.s, self.n, self.alpha = df['s'].values, df['n'].values, df['alpha'].values
 
     def load_path_file(self):
         df = pd.read_csv(os.path.join(self.data_path, 'path.csv'))
         self.path_x = df['x'].values
         self.path_y = df['y'].values
         self.psi_on_curve = splev(self.s, splrep(df['s'].values, df["psi_curve"].values))
-        # self.kappa_on_curve = splev(self.s, splrep(df['s'].values, df['curvature'].values))
+        self.kappa_on_curve = splev(self.s, splrep(df['s'].values, df['curvature'].values))
         self.x_ini = splev(self.s[0], splrep(df['s'].values, df['x'].values))
         self.y_ini = splev(self.s[0], splrep(df['s'].values, df['y'].values))
         self.s_limit = df['s'].values[-1]
@@ -38,40 +38,19 @@ class SimPlotter:
 
     def cal_XY(self):
         psi = self.init_psi
-        x, y = [self.x_ini], [self.y_ini]
+        x, y = [[self.x_ini], [self.y_ini]]
         x_c, y_c = self.x_ini, self.y_ini
-        # show_xc, show_yc, show_psi= [], [], []
-        # show_xc.append(x_c)
-        # show_yc.append(y_c)
-        # show_psi.append(self.psi_on_curve[0])
+
         for i in range(1, len(self.s)):
             ds = self.s[i] - self.s[i-1]
             ds = ds + self.s_limit if ds < -1 else ds
             psi += ds*self.kappa_on_curve[i]
-
             x_c += ds * np.cos(psi)
             y_c += ds * np.sin(psi)
-            # x_c += ds * np.cos(self.psi_on_curve[i])
-            # y_c += ds * np.sin(self.psi_on_curve[i])
-
-            # show_xc.append(x_c)
-            # show_yc.append(y_c)
-            # show_psi.append(self.psi_on_curve[i])
 
             x.append(x_c - self.n[i] * np.sin(psi))
             y.append(y_c + self.n[i] * np.cos(psi))
-        # plt.plot(show_xc, show_yc)
-        # plt.show()
-        #
-        # plt.plot([i for i in range(len(show_xc))], show_xc, label='x')
-        # plt.plot([i for i in range(len(show_yc))], show_yc, label='y')
-        # plt.plot([i for i in range(len(show_psi))], show_psi, label='psi')
-        # plt.legend()
-        # plt.show()
-        # data = np.column_stack([np.array(show_xc), np.array(show_yc), np.array(show_psi)])
-        # columns = ['x', 'y', 'psi']
-        # df = pd.DataFrame(data=data, columns=columns)
-        # df.to_csv(os.path.join(Script_Root,"check.csv"), index=False)
+
         return x[1:], y[1:]
 
     def plot_traj(self):
@@ -86,7 +65,7 @@ class SimPlotter:
         ax.set_xlabel("X (m)")
         ax.set_ylabel("Y (m)")
 
-        plt.savefig(os.path.join(self.data_path, "sim_traj.png"))
+        plt.savefig(os.path.join(self.data_path, "gp_sim.png"))
         plt.show()
         print("saving trajectory in: ", self.data_path)
 
@@ -105,7 +84,7 @@ class SimPlotter:
         plt.title("n on test_traj")
         plt.xlabel("X (m)")
         plt.ylabel("Y (m)")
-        plt.savefig(os.path.join(self.data_path, "n_on_test_traj.png"))
+        plt.savefig(os.path.join(self.data_path, "gp_n_on_traj.png"))
         plt.show()
         print("saving trajectory in: ", self.data_path)
         #  *****************************************************************************
@@ -125,7 +104,7 @@ class SimPlotter:
         plt.title("alpha on test_traj")
         plt.xlabel("X (m)")
         plt.ylabel("Y (m)")
-        plt.savefig(os.path.join(self.data_path, "alpha_on_test_traj.png"))
+        plt.savefig(os.path.join(self.data_path, "gp_alpha_on_traj.png"))
         plt.show()
         print("saving trajectory in: ", self.data_path)
         #  *****************************************************************************
@@ -138,15 +117,15 @@ class ResultePlotter:
         self.df = pd.read_csv(os.path.join(self.data_root, 'sim_results.csv'))
 
     def plot(self):
-        s, n, alpha, v = self.df['curvature'], self.df['n'], self.df['alpha'], self.df['v']
-        v_command, delta, time_list = self.df['v_comm'], self.df['delta'],self.df['time_list']
+        s, n, alpha, v = self.df['s'], self.df['n'], self.df['alpha'], self.df['v']
+        v_command, delta = self.df['v_comm'], self.df['delta']
 
         x = np.linspace(0, len(s), len(s))
         fig, ax = plt.subplots(1, 4, figsize=(16, 4))
         ax[0].plot(x, s, linewidth=2)
-        ax[0].set_ylabel("kappa", fontsize=14)
+        ax[0].set_ylabel("s (m)", fontsize=14)
         ax[0].tick_params(axis='both', which='major', labelsize=12)
-        ax[0].set_title("kappa")
+        ax[0].set_title("s")
 
         ax[1].plot(x, n, linewidth=2)
         ax[1].set_ylabel("n (m)", fontsize=14)
@@ -171,18 +150,14 @@ class ResultePlotter:
         plt.show()
 
         x_u = np.linspace(0, len(v_command), len(v_command))
-        fig_u, ax_u = plt.subplots(1, 3, figsize=(18, 4))
+        fig_u, ax_u = plt.subplots(1, 2, figsize=(10, 4))
         ax_u[0].plot(x_u, v_command, linewidth=2)
         ax_u[0].set_ylabel("v_command (m/s)", fontsize=14)
         ax_u[0].tick_params(axis='both', which='major', labelsize=12)
 
         ax_u[1].plot(x_u, delta, linewidth=2)
-        ax_u[1].set_ylabel("delta (rad)", fontsize=14)
+        ax_u[1].set_ylabel("delta (m/s)", fontsize=14)
         ax_u[1].tick_params(axis='both', which='major', labelsize=12)
-
-        ax_u[2].plot(x_u, time_list, linewidth=2)
-        ax_u[2].set_ylabel("cal time (s)", fontsize=14)
-        ax_u[2].tick_params(axis='both', which='major', labelsize=12)
 
         plt.suptitle("Trajectory control", fontsize=16, y=0.95)
         plt.savefig(os.path.join(self.data_root, "U_opt.png"), dpi=300)
@@ -192,5 +167,5 @@ if __name__ == '__main__':
     path_name = 'test_traj'
     plo = SimPlotter(path_name)
     plo.plot_traj()
-    replot = ResultePlotter(path_name)
-    replot.plot()
+    # replot = ResultePlotter(path_name)
+    # replot.plot()

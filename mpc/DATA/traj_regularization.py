@@ -73,7 +73,11 @@ try:
     plt.savefig(os.path.join(Script_Root, "test_traj", "path_plot.png"))
     plt.show()
 
+    max_curvature = [0.9973]*len(s)
+    min_curvature = [-0.9973] * len(s)
     plt.plot(s, kappa)
+    plt.plot(s, max_curvature, color='r')
+    plt.plot(s, min_curvature, color='r')
     plt.xlabel('s (m)')
     plt.ylabel("curvature")
     plt.savefig(os.path.join(Script_Root, "test_traj", "param_path.png"))
