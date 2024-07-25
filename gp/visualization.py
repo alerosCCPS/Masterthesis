@@ -9,7 +9,8 @@ Script_Root = os.path.abspath(os.path.dirname(__file__))
 
 class SimPlotter:
 
-    def __init__(self,path_name='test_traj'):
+    def __init__(self,path_name='test_traj', reversed=False):
+        self.reversed = reversed
         self.casename = path_name
         self.data_path = os.path.join(Script_Root, "DATA", path_name)
         self.s, self.n, self.alpha = [], [], []
@@ -24,7 +25,10 @@ class SimPlotter:
         self.s, self.n, self.alpha = df['s'].values, df['n'].values, df['alpha'].values
 
     def load_path_file(self):
-        df = pd.read_csv(os.path.join(self.data_path, 'path.csv'))
+        if not self.reversed:
+            df = pd.read_csv(os.path.join(self.data_path, 'path_normal.csv'))
+        else:
+            df = pd.read_csv(os.path.join(self.data_path, 'path_reversed.csv'))
         self.path_x = df['x'].values
         self.path_y = df['y'].values
         self.psi_on_curve = splev(self.s, splrep(df['s'].values, df["psi_curve"].values))
@@ -112,9 +116,9 @@ class SimPlotter:
 
 class ResultePlotter:
 
-    def __init__(self, casename='circle'):
+    def __init__(self, casename='test_traj'):
         self.data_root = os.path.join(Script_Root, 'DATA', casename)
-        self.df = pd.read_csv(os.path.join(self.data_root, 'sim_results.csv'))
+        self.df = pd.read_csv(os.path.join(self.data_root, 'gp_sim_results.csv'))
 
     def plot(self):
         s, n, alpha, v = self.df['s'], self.df['n'], self.df['alpha'], self.df['v']
@@ -146,7 +150,7 @@ class ResultePlotter:
         fig.text(0.5, 0.02, 'Step', ha='center', fontsize=14)
 
         plt.suptitle("Trajectory states", fontsize=16, y=0.95)
-        plt.savefig(os.path.join(self.data_root, "X_opt.png"), dpi=300)
+        plt.savefig(os.path.join(self.data_root, "gp_X_opt.png"), dpi=300)
         plt.show()
 
         x_u = np.linspace(0, len(v_command), len(v_command))
@@ -159,13 +163,14 @@ class ResultePlotter:
         ax_u[1].set_ylabel("delta (m/s)", fontsize=14)
         ax_u[1].tick_params(axis='both', which='major', labelsize=12)
 
-        plt.suptitle("Trajectory control", fontsize=16, y=0.95)
-        plt.savefig(os.path.join(self.data_root, "U_opt.png"), dpi=300)
+        plt.suptitle("Control Law", fontsize=16, y=0.95)
+        plt.savefig(os.path.join(self.data_root, "gp_U_opt.png"), dpi=300)
         plt.show()
 
 if __name__ == '__main__':
-    path_name = 'test_traj'
+    path_name = 'test_traj_3D'
+    # path_name = 'test_traj_2D'
     plo = SimPlotter(path_name)
     plo.plot_traj()
-    # replot = ResultePlotter(path_name)
-    # replot.plot()
+    replot = ResultePlotter(path_name)
+    replot.plot()

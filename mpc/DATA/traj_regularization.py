@@ -11,7 +11,7 @@ try:
     data = df.iloc[0:,0:5]
     x_c, y_c = data[' x_m'].values, data[' y_m'].values
 
-    # x_c, y_c = np.flip(x_c), np.flip(y_c)
+    x_c, y_c = np.flip(x_c), np.flip(y_c)
 
     s_c = data['# s_m'].values
     start_index = 0

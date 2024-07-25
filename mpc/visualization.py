@@ -28,11 +28,9 @@ class SimPlotter:
         self.path_x = df['x'].values
         self.path_y = df['y'].values
         self.psi_on_curve = splev(self.s, splrep(df['s'].values, df["psi_curve"].values))
-        # self.kappa_on_curve = splev(self.s, splrep(df['s'].values, df['curvature'].values))
         self.x_ini = splev(self.s[0], splrep(df['s'].values, df['x'].values))
         self.y_ini = splev(self.s[0], splrep(df['s'].values, df['y'].values))
         self.s_limit = df['s'].values[-1]
-        # self.init_psi = df['psi_curve'].values[0]
         self.init_psi = self.psi_on_curve[0]
 
 
@@ -40,10 +38,7 @@ class SimPlotter:
         psi = self.init_psi
         x, y = [self.x_ini], [self.y_ini]
         x_c, y_c = self.x_ini, self.y_ini
-        # show_xc, show_yc, show_psi= [], [], []
-        # show_xc.append(x_c)
-        # show_yc.append(y_c)
-        # show_psi.append(self.psi_on_curve[0])
+
         for i in range(1, len(self.s)):
             ds = self.s[i] - self.s[i-1]
             ds = ds + self.s_limit if ds < -1 else ds
@@ -51,27 +46,10 @@ class SimPlotter:
 
             x_c += ds * np.cos(psi)
             y_c += ds * np.sin(psi)
-            # x_c += ds * np.cos(self.psi_on_curve[i])
-            # y_c += ds * np.sin(self.psi_on_curve[i])
-
-            # show_xc.append(x_c)
-            # show_yc.append(y_c)
-            # show_psi.append(self.psi_on_curve[i])
 
             x.append(x_c - self.n[i] * np.sin(psi))
             y.append(y_c + self.n[i] * np.cos(psi))
-        # plt.plot(show_xc, show_yc)
-        # plt.show()
-        #
-        # plt.plot([i for i in range(len(show_xc))], show_xc, label='x')
-        # plt.plot([i for i in range(len(show_yc))], show_yc, label='y')
-        # plt.plot([i for i in range(len(show_psi))], show_psi, label='psi')
-        # plt.legend()
-        # plt.show()
-        # data = np.column_stack([np.array(show_xc), np.array(show_yc), np.array(show_psi)])
-        # columns = ['x', 'y', 'psi']
-        # df = pd.DataFrame(data=data, columns=columns)
-        # df.to_csv(os.path.join(Script_Root,"check.csv"), index=False)
+
         return x[1:], y[1:]
 
     def plot_traj(self):
@@ -184,7 +162,7 @@ class ResultePlotter:
         ax_u[2].set_ylabel("cal time (s)", fontsize=14)
         ax_u[2].tick_params(axis='both', which='major', labelsize=12)
 
-        plt.suptitle("Trajectory control", fontsize=16, y=0.95)
+        plt.suptitle("Control Law", fontsize=16, y=0.95)
         plt.savefig(os.path.join(self.data_root, "U_opt.png"), dpi=300)
         plt.show()
 
