@@ -14,8 +14,8 @@ class DataGen:
 
     def __init__(self, case_name="test_traj"):
         self.case_name = case_name
-        # self.k = 0.2359
-        self.k = 0.25
+        self.k = 0.2359
+        # self.k = 0.25
         self.data_root = os.path.join(Script_Root, "DATA", case_name)
         df = pd.read_csv(os.path.join(self.data_root, "path.csv"))
         def f(s):

@@ -1,9 +1,9 @@
 from data_sampler import Sampler
-from gp_3D import Trainer as Tra3D
-from sim_3D import Simulator as Sim3D
-from gp_2D import Trainer as Tra2D
-from sim_2D import Simulator as Sim2D
-from visualization import SimPlotter, ResultePlotter
+from gp.gp_3D import Trainer as Tra3D
+from gp.sim_3D import Simulator as Sim3D
+from gp.gp_2D import Trainer as Tra2D
+from gp.sim_2D import Simulator as Sim2D
+from gp.visualization import SimPlotter, ResultePlotter
 
 def test_gp_3D():
     reversed = False
@@ -23,7 +23,7 @@ def test_gp_3D():
     replot.plot()
 
 def test_gp_2D():
-    reversed = False
+    reversed = True
     case_name = 'test_traj_2D'
     sampler = Sampler(case_name)
     sampler.sampling()
@@ -39,5 +39,5 @@ def test_gp_2D():
     replot = ResultePlotter(case_name)
     replot.plot()
 
-test_gp_3D()
+# test_gp_3D()
 test_gp_2D()

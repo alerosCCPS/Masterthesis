@@ -159,8 +159,8 @@ class MPC:
 
 
 if __name__ == "__main__":
-    path_name = 'test_traj'
-    path_name = 'test'
+    path_name = 'test_traj_normal'
+    # path_name = 'test'
     mpc = MPC(path_name)
     mpc.sim()
     plo = SimPlotter(path_name)
