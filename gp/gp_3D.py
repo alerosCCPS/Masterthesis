@@ -146,8 +146,10 @@ class Trainer:
         torch.save({
             'model_state_dict': self.model.state_dict(),
             'likelihood_state_dict': self.likelihood.state_dict()
-        }, os.path.join(self.data_root, 'gp_model.pth'))
+        }, os.path.join(self.data_root, 'gp_3D.pth'))
         print(f"saved model at {self.data_root}")
+        # model = torch.load(os.path.join(self.data_root, 'gp_model.pth'))
+        # model.eval()
 
     def load_data(self, path):
         df = pd.read_csv(path)

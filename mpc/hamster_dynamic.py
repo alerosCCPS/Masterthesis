@@ -52,8 +52,8 @@ def get_hamster_model(path_file_name='circle'):
 
     constrains = types.SimpleNamespace()
     constrains.s_limit = path_length  # total curve length
-    constrains.n_limit = 0.05  # distance bias
-    constrains.alpha_limit = ca.pi*0.1
+    constrains.n_limit = 0.1  # distance bias
+    constrains.alpha_limit = ca.pi*0.5
     # constrains.n_limit = 1e-2  # distance bias
     # constrains.alpha_limit = 1e-2
     constrains.v_limit = 0.6  # m/s

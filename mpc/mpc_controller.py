@@ -25,12 +25,14 @@ class MPC:
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
-        # self.Q = np.diag([0., 1e-8, 1e-8, 1e-1])
-        # self.QN = np.diag([0., 1e-8, 1e-8, 1e-1])
-        self.Q = np.diag([0, 0, 0, 1e-1])
-        self.QN = np.diag([0, 0, 0, 1e-1])
+        self.Q = np.diag([0., 1e-2, 0, 1e-1])
+        self.QN = np.diag([0., 1e-2, 0, 1e-1])
+        # self.Q = np.diag([0, 0, 0, 1e-1])
+        # self.QN = np.diag([0, 0, 0, 1e-1])
+        # self.Q = np.diag([0, 1, 1, 1e-1])
+        # self.QN = np.diag([0, 1, 1, 1e-1])
         # self.R = np.diag([1e-8, 1e-8])
-        # self.R = np.diag([0, 0])
+        self.R = np.diag([0, 0])
         self.J = 0
         self.g = []
         self.lbg = []
@@ -53,9 +55,9 @@ class MPC:
             state, con = self.X[:, i], self.U[:, i]
             x_error = state - self.P[self.nx:]
 
-            # con_diff = con - con_ref
-            self.J += ca.mtimes(ca.mtimes(x_error.T, self.Q), x_error)
-                      # ca.mtimes(ca.mtimes(con_diff.T, self.R), con_diff)
+            con_diff = con - con_ref
+            self.J += ca.mtimes(ca.mtimes(x_error.T, self.Q), x_error)\
+                      +ca.mtimes(ca.mtimes(con_diff.T, self.R), con_diff)
             state_dot = self.hamster.dynamic(state, con)
             state_next = state + self.sample_time * state_dot
             self.g.append(state_next - self.X[:, i + 1])
@@ -159,8 +161,8 @@ class MPC:
 
 
 if __name__ == "__main__":
-    path_name = 'test_traj_normal'
-    # path_name = 'test'
+    path_name = 'test_traj'
+    # path_name = 'test_traj_reverse'
     mpc = MPC(path_name)
     mpc.sim()
     plo = SimPlotter(path_name)

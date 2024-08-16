@@ -20,8 +20,8 @@ class GP(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
         super(GP, self).__init__(train_x, train_y, likelihood)
         self.mean_module = ConstantMean()
-        # self.covar_module = ScaleKernel(RBFKernel())
-        self.covar_module = ScaleKernel(MaternKernel(nu=2.5, ard_num_dims=2))
+        self.covar_module = ScaleKernel(RBFKernel())
+        # self.covar_module = ScaleKernel(MaternKernel(nu=2.5, ard_num_dims=2))
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -64,6 +64,8 @@ class Trainer:
             u = pred_u.mean.numpy()
             lower, upper = pred_u.confidence_region()
             e = u - self.test_y.numpy()
+            print("average error ",sum(abs(e))/len(e))
+            print("num of test data", len(self.test_x))
 
             heads = ['delta','e_delta', 'lower', 'upper']
             df = pd.DataFrame(data=np.hstack((u.reshape(-1,1), e.reshape(-1,1), lower.numpy().reshape(-1,1), upper.numpy().reshape(-1,1))), columns=heads)
@@ -83,7 +85,7 @@ class Trainer:
         cmap = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
         norm = plt.Normalize(0, 0.5)
 
-        point_size = 20  # 所有点的大小相同
+        point_size = 10  # 所有点的大小相同
         # 如果需要每个点有不同的大小，可以使用： point_size = np.abs(e) * 10
 
         ax.scatter(data[:, 0], data[:, 1], c=np.abs(e), cmap=cmap, norm=norm, s=point_size, marker='o')

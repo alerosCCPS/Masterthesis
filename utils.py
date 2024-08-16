@@ -1,5 +1,5 @@
 import os
-
+import pandas as pd
 
 def check_path(path):
     if not os.path.exists(path):
@@ -8,4 +8,5 @@ def check_path(path):
         return
     print(f"check path exists {path}")
 
-print(os.path.dirname(__file__))
+def eva_sim(data_path):
+    df = pd.read_csv(data_path)

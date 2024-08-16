@@ -45,7 +45,7 @@ class Simulator:
         self.data_y = torch.tensor(rec_diff).to(self.data_type).squeeze_()
 
     def _load_path(self):
-        path = os.path.join(self.data_root, "gp_model.pth")
+        path = os.path.join(self.data_root, "gp_2D.pth")
         check_point = torch.load(path)
         self.likelihood.load_state_dict(check_point['likelihood_state_dict'])
         self.model.load_state_dict(check_point['model_state_dict'])
