@@ -23,9 +23,9 @@ def get_hamster_model(path_file_name='circle'):
     model.length_rear = 0.125  # m
     model.T = 0.00984
 
-    def dynamic_f(x, u):
+    def dynamic_f(x, u, kappa):
         s, n, alpha, v = x[0], x[1], x[2], x[3]
-        kappa = interpolator(s)
+        # kappa = interpolator(s)
         v_command, delta = u[0], u[1]
         beta = 0.5*delta
         s_dot = v*ca.cos(alpha+beta)/(1-n*kappa)
@@ -41,14 +41,16 @@ def get_hamster_model(path_file_name='circle'):
     v = ca.MX.sym("v")
     x = ca.vertcat(s, n, alpha, v)
 
+    kappa = ca.MX.sym("kappa")
+
     # control vector
     v_comm = ca.MX.sym("v_comm")
     delta = ca.MX.sym("delta")
     u = ca.vertcat(v_comm, delta)
 
-    rhs = dynamic_f(x, u)
+    rhs = dynamic_f(x, u, kappa)
 
-    model.dynamic = ca.Function("dynamic", [x,u], [rhs])
+    model.dynamic = ca.Function("dynamic", [x,u, kappa], [rhs])
 
     constrains = types.SimpleNamespace()
     constrains.s_limit = path_length  # total curve length
@@ -58,6 +60,6 @@ def get_hamster_model(path_file_name='circle'):
     # constrains.alpha_limit = 1e-2
     constrains.v_limit = 0.6  # m/s
     constrains.v_comm_limit = 0.6
-    constrains.delta_limit = deg2R(28)  # 14 degree
+    constrains.delta_limit = deg2R(28)  # 28 degree
 
     return model, constrains

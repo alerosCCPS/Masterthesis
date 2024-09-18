@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.interpolate import splev, splrep
 import time
 from visualization import SimPlotter, ResultePlotter
-from hamster_dynamic import get_hamster_model
+from hamster_dynamic import get_hamster_model, load_path
 from ekf import EKF
 import os
 
@@ -14,14 +14,17 @@ Script_Root = os.path.abspath(os.path.dirname(__file__))
 class MPC:
 
     def __init__(self, path_name='test_traj'):
+        self.path_name = path_name
+        self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
         self.hamster, self.constrains = get_hamster_model(path_name)
         self.sim_time, self.controller_freq = 13.5, 60  # second, Hz
         self.sample_time = 0.1
-        self.N = 20
+        self.N = 10
         self.nu = 2
         self.nx = 4
+        self.simple_mode = False
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
@@ -31,7 +34,7 @@ class MPC:
         # self.QN = np.diag([0, 0, 0, 1e-1])
         # self.Q = np.diag([0, 1, 1, 1e-1])
         # self.QN = np.diag([0, 1, 1, 1e-1])
-        # self.R = np.diag([1e-8, 1e-8])
+        # self.R = np.diag([1e-1, 1e-1])
         self.R = np.diag([0, 0])
         self.J = 0
         self.g = []
@@ -50,15 +53,24 @@ class MPC:
         self.g.append(self.X[:, 0] - self.P[0:self.nx])
 
         con_ref = np.array([0, 0])
+
+        if self.simple_mode:
+            s = ca.if_else(self.X[:, 0][0]>self.s_max, self.X[:, 0][0]-self.s_max, self.X[:, 0][0])
+            kappa = self.interpolator(s)
+
         # system dynamic constrain
         for i in range(self.N):
             state, con = self.X[:, i], self.U[:, i]
             x_error = state - self.P[self.nx:]
+            if not self.simple_mode:
+                s = ca.if_else(self.X[:, i][0] > self.s_max, self.X[:, i][0] - self.s_max, self.X[:, i][0])
+                kappa = self.interpolator(s)
 
             con_diff = con - con_ref
+            con_ref = con
             self.J += ca.mtimes(ca.mtimes(x_error.T, self.Q), x_error)\
                       +ca.mtimes(ca.mtimes(con_diff.T, self.R), con_diff)
-            state_dot = self.hamster.dynamic(state, con)
+            state_dot = self.hamster.dynamic(state, con, kappa)
             state_next = state + self.sample_time * state_dot
             self.g.append(state_next - self.X[:, i + 1])
         x_error = self.X[:,-1] - self.P[self.nx:]
@@ -124,7 +136,7 @@ class MPC:
             x0, con, cal_time = self.predict(x0, list(x_init))
             self.time_list.append(cal_time)
 
-            states_next = x_init + self.hamster.dynamic(x_init, con) / self.controller_freq
+            states_next = x_init + self.hamster.dynamic(x_init, con, self.interpolator(x0[0])) / self.controller_freq
             x_init = states_next.full()[:,0]
 
             # x_prior = x_init
@@ -157,12 +169,13 @@ class MPC:
         headers = ["curvature", 's', 'n', 'alpha', 'v', 'v_comm', 'delta', 'time_list']
         data = np.hstack((np.array(kappa).reshape(-1,1), data))
         df = pd.DataFrame(data=data, columns=headers)
-        df.to_csv(os.path.join(self.save_root, 'sim_results.csv'), index=False)
+        df.to_csv(os.path.join(self.save_root, 'mpc_sim_results.csv'), index=False)
 
 
 if __name__ == "__main__":
-    path_name = 'test_traj'
+    path_name = 'test_traj_mpc_simple'
     # path_name = 'test_traj_reverse'
+    path_name = 'test_traj_mpc'
     mpc = MPC(path_name)
     mpc.sim()
     plo = SimPlotter(path_name)

@@ -1,4 +1,8 @@
+import sys
 import os
+Script_Root = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(Script_Root)
+
 import pandas as pd
 import gpytorch
 from gpytorch.likelihoods import GaussianLikelihood
@@ -10,12 +14,9 @@ import numpy as np
 from scipy.interpolate import splrep, splev
 
 
-Script_Root = os.path.abspath(os.path.dirname(__file__))
-
-
 class Simulator:
 
-    def __init__(self, case_name="test_traj_3D", reversed=False):
+    def __init__(self, case_name="test_traj_3D",data_file="train_data", reversed=False):
         self.reversed = reversed
         self.k = 0.25
         self.data_type = torch.float32
@@ -23,11 +24,11 @@ class Simulator:
         self.lf_dis = 0.15
         self.x = torch.tensor([[0,0,0,0,0]]).to(self.data_type)
         self.sim_time = 13.5  # second
-        self.controller_freq = 90  # Hz
+        self.controller_freq = 60  # Hz
         self.data_root = os.path.join(Script_Root, "DATA", case_name)
 
         self.data_x, self.data_y = None, None
-        self._load_data()
+        self._load_data(data_file)
 
         self.likelihood = GaussianLikelihood(noise_constraint=Interval(1e-3, 0.2)).to(self.data_type)
         self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood).to(self.data_type)
@@ -35,8 +36,8 @@ class Simulator:
         self.kappa_of_s = self._load_path()
         self.his = []
 
-    def _load_data(self):
-        path = os.path.join(self.data_root, "train_data.csv")
+    def _load_data(self,data_file):
+        path = os.path.join(self.data_root, f"{data_file}.csv")
         df = pd.read_csv(path)
         n, alpha, rec_diff = df['n'].values.reshape((-1, 1)), \
             df['alpha'].values.reshape((-1, 1)), \

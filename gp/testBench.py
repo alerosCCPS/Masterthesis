@@ -18,7 +18,7 @@ def test_gp_3D():
     # trainer = Tra3D(case_name)
     # trainer.process()
 
-    simulator = Sim3D(case_name, reversed)
+    simulator = Sim3D(case_name=case_name, reversed=reversed)
     simulator.start_sim()
 
     plo = SimPlotter(case_name, reversed)
@@ -35,7 +35,7 @@ def test_gp_2D():
     # trainer = Tra2D(case_name)
     # trainer.process()
 
-    simulator = Sim2D(case_name, reversed)
+    simulator = Sim2D(case_name=case_name,data_file="train_data_50", reversed=reversed)
     simulator.start_sim()
 
     plo = SimPlotter(case_name, reversed)
@@ -52,7 +52,7 @@ def test_gp_3D_LF():
     # trainer = Tra3DLF(case_name)
     # trainer.process()
 
-    simulator = Sim3DLF(case_name, reversed)
+    simulator = Sim3DLF(case_name=case_name, reversed=reversed)
     simulator.start_sim()
 
     plo = SimPlotter(case_name, reversed)
@@ -69,7 +69,7 @@ def test_gp_2D_LF():
     # trainer = Tra2DLF(case_name)
     # trainer.process()
 
-    simulator = Sim2DLF(case_name, reversed)
+    simulator = Sim2DLF(case_name=case_name, reversed=reversed)
     simulator.start_sim()
 
     plo = SimPlotter(case_name, reversed)

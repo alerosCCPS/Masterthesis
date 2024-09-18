@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'model_iden'
+package_name = 'steering_cali'
 
 setup(
     name=package_name,
@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'pandas'],
+    install_requires=['setuptools'],
     zip_safe=True,
     maintainer='yangyin',
     maintainer_email='yangyin@todo.todo',
@@ -20,10 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "comm_sub_handle=model_iden.myNode:start_comm_sub",
-            "comm_pub_handle=model_iden.myNode:start_comm_pub",
-            "data_sender_handle=model_iden.myNode:start_data_sender",
-            "mess_sub_handle=model_iden.myNode:start_mess_sub"
+        "comm_pub_handle=steering_cali.main:start_comm_pub"
         ],
     },
 )
