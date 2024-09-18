@@ -1,0 +1,18 @@
+{
+  "constant_velocity": false,
+  "simple_mode": true,
+  "frequency": 10,
+  "DEBUG": false,
+  "direction": true,
+  "Q":[0, 1e-2, 0, 1e-1],
+  "QN": [0, 1e-2, 0, 1e-1],
+  "R": [0, 1e-1],
+  "N": 10,
+  "sample_time": 0.1,
+  "max_vel": 0.3,
+  "constrains": {
+    "n": 0.01,
+    "alpha": 0.5,
+    "delta": 30
+  }
+}
