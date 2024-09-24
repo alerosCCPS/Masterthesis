@@ -14,6 +14,9 @@ Script_Root = os.path.abspath(os.path.dirname(__file__))
 class MPC:
 
     def __init__(self, path_name='test_traj'):
+        self.No_track = False
+        self.kappa_ref = 0
+        self.x_init = [0, 0, 0, 0]
         self.path_name = path_name
         self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
@@ -21,7 +24,7 @@ class MPC:
         self.hamster, self.constraints = get_hamster_model(path_name)
         self.sim_time, self.controller_freq = 13.5, 60  # second, Hz
         self.sample_time = 0.1
-        self.N = 10
+        self.N = 20
         self.nu = 2
         self.nx = 4
         self.simple_mode = False
@@ -60,9 +63,14 @@ class MPC:
 
         con_ref = np.array([0, 0])
 
-        if self.simple_mode:
+        if self.simple_mode and not self.No_track:
             s = ca.if_else(self.X[:, 0][0]>self.s_max, self.X[:, 0][0]-self.s_max, self.X[:, 0][0])
             kappa = self.interpolator(s)
+        elif self.simple_mode and self.No_track:
+            kappa = self.kappa_ref
+            s = ca.if_else(self.X[:, 0][0]>self.s_max, self.X[:, 0][0]-self.s_max, self.X[:, 0][0])
+       
+            
 
         # system dynamic constrain
         for i in range(self.N):
@@ -141,18 +149,24 @@ class MPC:
 
         #  x = [s, n, alpha, v]
         # x_init = [0, 0.04, 0.05*np.pi, 0]
-        x_init = [0, 0, 0, 0] #[0, 0, 0, 0.2]
+        x_init = self.x_init#[0, 0, 0, 0] #[0, 0, 0, 0.2]
 
         sim_iter = int(self.sim_time * self.controller_freq)
-        x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
-
+        #x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
+        x0x = ca.repmat(x_init,(self.N + 1))
+        x0u = ca.repmat([0.6 ,self.hamster.length_front*self.kappa_ref],self.N)
+        x0 = ca.vertcat(x0x,x0u)
         for i in range(sim_iter):
             x0, con, cal_time, status, U_OCP, X_OCP = self.predict(x0, list(x_init))
             self.time_list.append(cal_time)
             self.OCP_results_X.append(X_OCP)
             self.OCP_results_U.append(U_OCP)
             self.Solverstats.append(status)
-            states_next = x_init + self.hamster.dynamic(x_init, con, self.interpolator(x0[0])) / self.controller_freq
+            if self.No_track and self.simple_mode:
+                states_next = x_init + self.hamster.dynamic(x_init, con, self.kappa_ref) / self.controller_freq
+            else:
+                states_next = x_init + self.hamster.dynamic(x_init, con, self.interpolator(x0[0])) / self.controller_freq
+            
             x_init = states_next.full()[:,0]
 
             # x_prior = x_init
@@ -182,7 +196,7 @@ class MPC:
             print("there was an infeasible problem. Please check carefully.")
         else:
             print('everything seemed to be feasible')    
-        self.save_data()
+        #self.save_data()
 
     def save_data(self):
         path_df = pd.read_csv(os.path.join(self.save_root, "path.csv"))
