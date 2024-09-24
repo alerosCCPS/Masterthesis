@@ -2,13 +2,15 @@ import os
 import pandas as pd
 import numpy as np
 import sys
+Script_Root = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.join(Script_Root,".."))
 from scipy.interpolate import splev, splrep
 from utils import check_path
 from hamster_dynamic import get_hamster_model
-from mpc_controller import MPC
+from mpc.mpc_controller import MPC
+import casadi as ca
 
-Script_Root = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(os.path.join(Script_Root,".."))
+
 n_limit = 0.1
 alpha_limit = np.pi * 0.35
 class DataGen:
@@ -55,7 +57,7 @@ class DataGen:
             alpha_upper = alpha_limit
             alpha_lower = -alpha_limit
             self.sampling(self.position,local_kappa, n_upper, n_lower, alpha_upper, alpha_lower)
-        self.save_data()
+        #self.save_data()
 
     def sampling(self, s, local_kappa, n_upper, n_lower, alpha_upper, alpha_lower):
         # iter_n = int((n_upper - n_lower)/self.resolution_n)+1
@@ -80,7 +82,7 @@ class DataGen:
         #     for j in range(iter_alpha):
         #         alpha = alpha_lower + j*self.resolution_alpha
                 x = [s, n, alpha, 0.6]
-                _, u, _ = self.mpc.predict(x=x)
+                _, u, _ , _,_,_= self.mpc.predict(x0=ca.repmat(0, 4 * (self.mpc.N + 1) + 2 * self.mpc.N, 1),x=x)
                 look_fw = self.kappa_of_s(s+self.look_fw_dis).item()
                 print([local_kappa,look_fw, s, n, alpha, 0.6] + list(u))
                 self.data.append([local_kappa,look_fw, s, n, alpha, 0.6]+list(u))
@@ -97,7 +99,7 @@ class DataGen:
         print(f"saving data at {self.save_root}")
 
 if __name__ == '__main__':
-    cases = ['test_traj_normal', 'test_traj_reverse']
+    cases = ['test_traj_mpc', 'test_traj_reverse']
     # case_name = 'test_traj_normal'
     # case_name = 'test_traj_reverse'
     for c in cases:

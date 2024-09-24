@@ -120,6 +120,6 @@ class Simulator:
         print(f"saving simulation results at {self.data_root}")
 
 if __name__ == '__main__':
-    case_name = 'synthetic'
+    case_name = 'test_traj_2D'#synthetic'
     simulator = Simulator(case_name)
     simulator.start_sim()
