@@ -14,7 +14,7 @@ class PathCreator:
 
     def __init__(self):
         self.steps = 0
-        self.step_length = 0.01
+        self.step_length = 0.001
         self.initPos = (0, 0)
         self.initTheta = 0
         self.terminalTheta = 0
