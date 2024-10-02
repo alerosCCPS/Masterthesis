@@ -23,7 +23,8 @@ class Controller_GP3D(Node):
         super().__init__(name)
         self.data_type = torch.float32
         self.get_logger().info("create Controller Node !")
-        self.data_root = os.path.join(Script_Root, "DATA",f"test_traj_3D")
+        # self.data_root = os.path.join(Script_Root, "DATA",f"test_traj_3D")
+        self.data_root = os.path.join(Script_Root, "DATA", f"val_traj_3D")
         self.mpc = GP3D(self.data_root)
         with open(os.path.join(Script_Root, "setup.json"))as f:
             data = json.load(f)

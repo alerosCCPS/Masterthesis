@@ -22,7 +22,8 @@ class Simulator:
         self.data_type = torch.float32
         self.s = 0  # arc length at the start position
         self.x = torch.tensor([[0,0,0,0]]).to(self.data_type)
-        self.sim_time = 13.5  # second
+        self.sim_time = 16  # second
+        self.max_s = 0
         self.controller_freq = 60  # Hz
         self.data_root = os.path.join(Script_Root, "DATA", case_name)
 
@@ -61,6 +62,9 @@ class Simulator:
         s, curvature = df["s"].values, df["curvature"].values
         tck = splrep(s, curvature)
 
+        self.max_s = s[-1]
+        print(f"max s: {self.max_s}")
+
         self.x[0,0] = torch.tensor(splev(self.s, tck=tck))
         print(f"initialization state: {self.x}")
         def f(value):
@@ -89,6 +93,8 @@ class Simulator:
         alpha_dot = v*np.sin(beta)/model.length_rear - kappa*s_dot
         v_dot = (v_command-v)/model.T
         self.s += s_dot / self.controller_freq
+        if self.s>=self.max_s:
+            self.s -= self.max_s
         x_delta =[e/self.controller_freq for e in [n_dot, alpha_dot, v_dot]]
         self.x[0,0] = torch.tensor(self.kappa_of_s(self.s))
 
@@ -113,7 +119,7 @@ class Simulator:
         self.save_data()
 
     def save_data(self):
-        heads = ['curvature', 's', 'n', 'alpha', 'v', "v_comm", "delta"]
+        heads = ['kappa', 's', 'n', 'alpha', 'v', "v_comm", "delta"]
         data = np.array(self.his)
         df = pd.DataFrame(data=data, columns=heads)
         df.to_csv(os.path.join(self.data_root, 'gp_sim_results.csv'), index=False)

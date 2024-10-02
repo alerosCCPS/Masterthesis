@@ -138,7 +138,7 @@ class ResultePlotter:
         time = self.check_data(self.check_data(self.df['time'].values))
 
         x = np.linspace(0, len(s), len(s))
-        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+        fig, ax = plt.subplots(1, 4, figsize=(18, 4))
         ax[0].plot(x, s, linewidth=2)
         ax[0].set_ylabel("kappa", fontsize=14)
         ax[0].tick_params(axis='both', which='major', labelsize=12)
@@ -185,12 +185,14 @@ class ResultePlotter:
         plt.show()
 
 if __name__ == '__main__':
-    data_scale = 400
+    data_scale = 800
     path_list = [
-    'test_traj_2D',
-                 'test_traj_2D_LF',
-                 'test_traj_3D',
-                 'test_traj_3D_LF'
+    # 'test_traj_2D',
+    #              'test_traj_2D_LF',
+    #              'test_traj_3D',
+    #              'test_traj_3D_LF'
+        'val_traj_3D',
+        'val_traj_2D'
                  ]
     for path_name in path_list:
         path_name = os.path.join('backUp',path_name)

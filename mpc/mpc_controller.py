@@ -22,9 +22,9 @@ class MPC:
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
         self.hamster, self.constraints = get_hamster_model(path_name)
-        self.sim_time, self.controller_freq = 13.5, 60  # second, Hz
+        self.sim_time, self.controller_freq = 16, 60  # second, Hz
         self.sample_time = 0.1
-        self.N = 20
+        self.N = 10
         self.nu = 2
         self.nx = 4
         self.simple_mode = False
@@ -69,8 +69,6 @@ class MPC:
         elif self.simple_mode and self.No_track:
             kappa = self.kappa_ref
             s = ca.if_else(self.X[:, 0][0]>self.s_max, self.X[:, 0][0]-self.s_max, self.X[:, 0][0])
-       
-            
 
         # system dynamic constrain
         for i in range(self.N):
@@ -109,7 +107,7 @@ class MPC:
         self.ubx[2: self.nx * (self.N + 1):4] = [self.constraints.alpha_limit] * len(self.ubx[2: self.nx * (self.N + 1):4])
 
         # constrain v
-        self.lbx[3: self.nx * (self.N + 1): 4] = [0.2] * len(self.lbx[3: self.nx * (self.N + 1): 4])
+        self.lbx[3: self.nx * (self.N + 1): 4] = [0] * len(self.lbx[3: self.nx * (self.N + 1): 4])
         self.ubx[3: self.nx * (self.N + 1): 4] = [self.constraints.v_limit] * len(self.ubx[3: self.nx * (self.N + 1): 4])
 
         # constrain v_comm
@@ -196,7 +194,7 @@ class MPC:
             print("there was an infeasible problem. Please check carefully.")
         else:
             print('everything seemed to be feasible')    
-        #self.save_data()
+        self.save_data()
 
     def save_data(self):
         path_df = pd.read_csv(os.path.join(self.save_root, "path.csv"))
@@ -209,9 +207,11 @@ class MPC:
 
 
 if __name__ == "__main__":
-    path_name = 'test_traj_mpc_simple'
+    # path_name = 'test_traj_mpc_simple'
     # path_name = 'test_traj_reverse'
-    path_name = 'test_traj_mpc'
+    # path_name = 'test_traj_mpc'
+    path_name = 'val_traj_mpc'
+    path_name = 'val_traj_mpc_simple'
     mpc = MPC(path_name)
     mpc.sim()
     plo = SimPlotter(path_name)

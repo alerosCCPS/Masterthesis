@@ -11,9 +11,14 @@ class Eval:
     def __init__(self, sim=True):
         self.sim = sim
         self.root_path = Script_Root
-        self.traj_list = ["test_traj"]
-        self.controller_list = {"mpc":['mpc', 'mpc_simple'],
-                                "gp":['2D', '3D', '2D_LF', '3D_LF']}
+        self.traj_list = [
+            "test_traj",
+            # 'val_traj'
+                          ]
+        self.controller_list = {"mpc":['mpc', 'mpc_simple', 'mpc_refine'],
+                                "gp":['2D', '3D',
+                                      # '2D_LF', '3D_LF'
+                                      ]}
         self.columns = ["traj_name"] + self.controller_list['mpc'] + self.controller_list['gp']
         self.row_title = self.traj_list
         self.data = []
