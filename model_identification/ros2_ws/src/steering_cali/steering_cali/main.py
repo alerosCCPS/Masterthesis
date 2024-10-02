@@ -71,8 +71,8 @@ class CommPub(Node):
         if elapsed_time > 8:
             self.save_data()
             self.destroy_node()
-        self.velocity = 0.2
-        self.delta = 15.0
+        self.velocity = 0.6
+        self.delta = 25.0
 
 
     def callback(self):

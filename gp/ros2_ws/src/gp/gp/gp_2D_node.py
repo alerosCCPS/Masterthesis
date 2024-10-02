@@ -25,7 +25,8 @@ class Controller_GP2D(Node):
         self.local_kappa = 0
         self.data_type = torch.float32
         self.get_logger().info("create Controller Node !")
-        self.data_root = os.path.join(Script_Root, "DATA",f"test_traj_2D")
+        # self.data_root = os.path.join(Script_Root, "DATA",f"test_traj_2D")
+        self.data_root = os.path.join(Script_Root, "DATA", f"val_traj_2D")
         self.mpc = GP2D(self.data_root)
         with open(os.path.join(Script_Root, "setup.json"))as f:
             data = json.load(f)

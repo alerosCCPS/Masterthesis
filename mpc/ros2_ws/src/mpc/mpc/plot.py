@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors
 from scipy.interpolate import splrep, splev
 import pandas as pd
@@ -12,7 +13,7 @@ class SimPlotter:
     def __init__(self,path_name='circle', data_scale=410):
         self.data_scale = data_scale
         self.casename = path_name
-        self.data_path = os.path.join(Script_Root, "DATA", path_name)
+        self.data_path = os.path.join(Script_Root, "DATA", 'backUp',path_name)
         self.s, self.n, self.alpha, self.kappa_on_curve = [], [], [], []
         self.load_sim_results()
         self.path_x, self.path_y, self.s_limit, self.init_psi = [], [], [], []
@@ -120,7 +121,7 @@ class ResultePlotter:
 
     def __init__(self, casename='circle', data_scale=410):
         self.data_scale = data_scale
-        self.data_root = os.path.join(Script_Root, 'DATA', casename)
+        self.data_root = os.path.join(Script_Root, 'DATA','backUp', casename)
         self.df = pd.read_csv(os.path.join(self.data_root, 'real_results.csv'))
 
     def check_data(self, data):
@@ -138,29 +139,30 @@ class ResultePlotter:
         time = self.check_data(self.df['time'].values)
 
         x = np.linspace(0, len(s), len(s))
-        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+        fig, ax = plt.subplots(1, 4, figsize=(18, 4))
         ax[0].plot(x, s, linewidth=2)
-        ax[0].set_ylabel("kappa", fontsize=14)
+        ax[0].set_ylabel("kappa", fontsize=12)
         ax[0].tick_params(axis='both', which='major', labelsize=12)
         ax[0].set_title("kappa")
 
         ax[1].plot(x, n, linewidth=2)
-        ax[1].set_ylabel("n (m)", fontsize=14)
+        ax[1].set_ylabel("n (m)", fontsize=12)
         ax[1].tick_params(axis='both', which='major', labelsize=12)
         ax[1].set_title("n")
+        ax[1].yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
 
         ax[2].plot(x, alpha, linewidth=2)
-        ax[2].set_ylabel("alpha (rad)", fontsize=14)
+        ax[2].set_ylabel("alpha (rad)", fontsize=12)
         ax[2].tick_params(axis='both', which='major', labelsize=12)
         ax[2].set_title("alpha")
 
         ax[3].plot(x, v, linewidth=2)
-        ax[3].set_ylabel("v (m/s)", fontsize=14)
+        ax[3].set_ylabel("v (m/s)", fontsize=12)
         ax[3].tick_params(axis='both', which='major', labelsize=12)
         ax[3].set_title("v")
 
         plt.subplots_adjust(wspace=0.3)
-        fig.text(0.5, 0.02, 'Step', ha='center', fontsize=14)
+        fig.text(0.5, 0.02, 'Step', ha='center', fontsize=12)
 
         plt.suptitle("Trajectory states", fontsize=16, y=0.95)
         plt.savefig(os.path.join(self.data_root, "X_opt.png"), dpi=300)
@@ -185,10 +187,13 @@ class ResultePlotter:
         plt.show()
 
 if __name__ == '__main__':
-    path_name = 'test_traj_mpc'
+    # path_name = 'test_traj_mpc'
+    path_name = 'test_traj_mpc_fine'
     # path_name = 'test_traj_mpc_constant'
     # path_name = 'test_traj_mpc_simple'
-    data_scale = 400
+    # path_name = 'val_traj_mpc_simple'
+    # path_name = 'val_traj_mpc_fine'
+    data_scale = 800
     plo = SimPlotter(path_name, data_scale)
     plo.plot_traj()
     replot = ResultePlotter(path_name,data_scale)

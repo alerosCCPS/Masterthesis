@@ -1,6 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.ticker as ticker
 from scipy.interpolate import splrep, splev
 import pandas as pd
 import numpy as np
@@ -115,34 +116,34 @@ class SimPlotter:
 
 
 class ResultePlotter:
-
     def __init__(self, casename='test_traj'):
         self.data_root = os.path.join(Script_Root, 'DATA', casename)
         self.df = pd.read_csv(os.path.join(self.data_root, 'gp_sim_results.csv'))
 
     def plot(self):
-        s, n, alpha, v = self.df['s'], self.df['n'], self.df['alpha'], self.df['v']
+        s, n, alpha, v = self.df['kappa'], self.df['n'], self.df['alpha'], self.df['v']
         v_command, delta = self.df['v_comm'], self.df['delta']
 
         x = np.linspace(0, len(s), len(s))
-        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+        fig, ax = plt.subplots(1, 4, figsize=(18, 4))
         ax[0].plot(x, s, linewidth=2)
-        ax[0].set_ylabel("s (m)", fontsize=14)
+        ax[0].set_ylabel("kappa", fontsize=12)
         ax[0].tick_params(axis='both', which='major', labelsize=12)
-        ax[0].set_title("s")
+        ax[0].set_title("kappa")
 
         ax[1].plot(x, n, linewidth=2)
-        ax[1].set_ylabel("n (m)", fontsize=14)
+        ax[1].set_ylabel("n (m)", fontsize=10)
         ax[1].tick_params(axis='both', which='major', labelsize=12)
         ax[1].set_title("n")
+        ax[1].yaxis.set_major_formatter(ticker.FormatStrFormatter('%.3f'))
 
         ax[2].plot(x, alpha, linewidth=2)
-        ax[2].set_ylabel("alpha (rad)", fontsize=14)
+        ax[2].set_ylabel("alpha (rad)", fontsize=12)
         ax[2].tick_params(axis='both', which='major', labelsize=12)
         ax[2].set_title("alpha")
 
         ax[3].plot(x, v, linewidth=2)
-        ax[3].set_ylabel("v (m/s)", fontsize=14)
+        ax[3].set_ylabel("v (m/s)", fontsize=12)
         ax[3].tick_params(axis='both', which='major', labelsize=12)
         ax[3].set_title("v")
 
@@ -154,7 +155,7 @@ class ResultePlotter:
         plt.show()
 
         x_u = np.linspace(0, len(v_command), len(v_command))
-        fig_u, ax_u = plt.subplots(1, 2, figsize=(10, 4))
+        fig_u, ax_u = plt.subplots(1, 2, figsize=(11, 4))
         ax_u[0].plot(x_u, v_command, linewidth=2)
         ax_u[0].set_ylabel("v_command (m/s)", fontsize=14)
         ax_u[0].tick_params(axis='both', which='major', labelsize=12)

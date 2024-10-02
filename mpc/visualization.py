@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import matplotlib.colors as mcolors
 from scipy.interpolate import splrep, splev
 import pandas as pd
@@ -20,7 +21,7 @@ class SimPlotter:
         self.load_path_file()
 
     def load_sim_results(self):
-        df = pd.read_csv(os.path.join(self.data_path, 'sim_results.csv'))
+        df = pd.read_csv(os.path.join(self.data_path, 'mpc_sim_results.csv'))
         self.s, self.n, self.alpha, self.kappa_on_curve = df['s'].values, df['n'].values, df['alpha'].values, df["curvature"].values
 
     def load_path_file(self):
@@ -113,31 +114,32 @@ class ResultePlotter:
 
     def __init__(self, casename='circle'):
         self.data_root = os.path.join(Script_Root, 'DATA', casename)
-        self.df = pd.read_csv(os.path.join(self.data_root, 'sim_results.csv'))
+        self.df = pd.read_csv(os.path.join(self.data_root, 'mpc_sim_results.csv'))
 
     def plot(self):
         s, n, alpha, v = self.df['curvature'], self.df['n'], self.df['alpha'], self.df['v']
         v_command, delta, time_list = self.df['v_comm'], self.df['delta'],self.df['time_list']
 
         x = np.linspace(0, len(s), len(s))
-        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+        fig, ax = plt.subplots(1, 4, figsize=(18, 4))
         ax[0].plot(x, s, linewidth=2)
-        ax[0].set_ylabel("kappa", fontsize=14)
+        ax[0].set_ylabel("kappa", fontsize=12)
         ax[0].tick_params(axis='both', which='major', labelsize=12)
         ax[0].set_title("kappa")
 
         ax[1].plot(x, n, linewidth=2)
-        ax[1].set_ylabel("n (m)", fontsize=14)
+        ax[1].set_ylabel("n (m)", fontsize=10)
         ax[1].tick_params(axis='both', which='major', labelsize=12)
         ax[1].set_title("n")
+        ax[1].yaxis.set_major_formatter(ticker.FormatStrFormatter('%.3f'))
 
         ax[2].plot(x, alpha, linewidth=2)
-        ax[2].set_ylabel("alpha (rad)", fontsize=14)
+        ax[2].set_ylabel("alpha (rad)", fontsize=12)
         ax[2].tick_params(axis='both', which='major', labelsize=12)
         ax[2].set_title("alpha")
 
         ax[3].plot(x, v, linewidth=2)
-        ax[3].set_ylabel("v (m/s)", fontsize=14)
+        ax[3].set_ylabel("v (m/s)", fontsize=12)
         ax[3].tick_params(axis='both', which='major', labelsize=12)
         ax[3].set_title("v")
 
@@ -167,7 +169,8 @@ class ResultePlotter:
         plt.show()
 
 if __name__ == '__main__':
-    path_name = 'test_traj'
+    path_name = 'test_traj_mpc'
+    # path_name = 'test_traj_mpc_simple'
     plo = SimPlotter(path_name)
     plo.plot_traj()
     replot = ResultePlotter(path_name)

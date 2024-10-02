@@ -11,7 +11,8 @@ from gp.visualization import SimPlotter, ResultePlotter
 
 def test_gp_3D():
     reversed = False
-    case_name = 'test_traj_3D'
+    # case_name = 'test_traj_3D'
+    case_name = 'val_traj_3D'
     # sampler = Sampler(case_name,sample_rate=0.1)
     # sampler.sampling()
     #
@@ -28,7 +29,8 @@ def test_gp_3D():
 
 def test_gp_2D():
     reversed = False
-    case_name = 'test_traj_2D'
+    # case_name = 'test_traj_2D'
+    case_name = 'val_traj_2D'
     # sampler = Sampler(case_name,sample_rate=0.1)
     # sampler.sampling()
     #
@@ -45,7 +47,8 @@ def test_gp_2D():
 
 def test_gp_3D_LF():
     reversed = False
-    case_name = 'test_traj_3D_LF'
+    # case_name = 'test_traj_3D_LF'
+    case_name = 'val_traj_3D_LF'
     # sampler = Sampler(case_name,sample_rate=0.1)
     # sampler.sampling()
     #
@@ -62,7 +65,8 @@ def test_gp_3D_LF():
 
 def test_gp_2D_LF():
     reversed = False
-    case_name = 'test_traj_2D_LF'
+    # case_name = 'test_traj_2D_LF'
+    case_name = 'val_traj_2D_LF'
     # sampler = Sampler(case_name,sample_rate=0.1)
     # sampler.sampling()
     #

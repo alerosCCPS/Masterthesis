@@ -1,18 +1,18 @@
 {
   "constant_velocity": false,
-  "simple_mode": true,
+  "simple_mode": false,
   "frequency": 10,
   "DEBUG": false,
   "direction": true,
-  "Q":[0, 1e-2, 0, 1e-1],
-  "QN": [0, 1e-2, 0, 1e-1],
-  "R": [0, 1e-1],
+  "Q":[0, 1e1, 1e-2, 1e-2],
+  "QN": [0, 1e1, 1e-2, 1e-2],
+  "R": [1e-3, 1e-3],
   "N": 10,
   "sample_time": 0.1,
-  "max_vel": 0.3,
-  "constrains": {
-    "n": 0.01,
-    "alpha": 0.5,
-    "delta": 30
+  "max_vel": 0.28,
+  "constraints": {
+    "n": 0.2,
+    "alpha": 0.8,
+    "delta": 25
   }
 }

@@ -62,20 +62,20 @@ def get_hamster_model(path_file_name='test_traj_normal'):
 
     model.dynamic = ca.Function("dynamic", [x,u,kappa], [rhs])
 
-    constrains = types.SimpleNamespace()
-    constrains.s_limit = path_length  # total curve length
+    constraints = types.SimpleNamespace()
+    constraints.s_limit = path_length  # total curve length
     with open(os.path.join(Script_Root, "setup.json"))as f:
         data = json.load(f)
-    constrains.n_limit = data["constrains"]["n"]
-    constrains.alpha_limit = ca.pi*data["constrains"]["alpha"]
-    constrains.v_limit = data["max_vel"]
-    constrains.v_comm_limit = data["max_vel"]
-    constrains.delta_limit = deg2R(data["constrains"]["delta"])
+    constraints.n_limit = data["constraints"]["n"]
+    constraints.alpha_limit = ca.pi*data["constraints"]["alpha"]
+    constraints.v_limit = data["max_vel"]
+    constraints.v_comm_limit = data["max_vel"]
+    constraints.delta_limit = deg2R(data["constraints"]["delta"])
 
-    print("set constrains:")
-    print(constrains)
+    print("set constraints:")
+    print(constraints)
 
-    return model, constrains
+    return model, constraints
 
 
 class MPC:
@@ -85,7 +85,7 @@ class MPC:
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.interpolator,_,self.s_max = load_path(path_name)
         # self.EKF = EKF(path_name)
-        self.hamster, self.constrains = get_hamster_model(path_name)
+        self.hamster, self.constraints = get_hamster_model(path_name)
 
         self.sample_time = 0.1
         self.N = 20
@@ -110,6 +110,10 @@ class MPC:
         self.X_opt = []
         self.x0_ = None
         self.solver = None
+        self.OCP_results_X = []  #
+        self.OCP_results_U = []
+        self.Solverstats = []  # store status of solver for each OCP
+        self.feasible_iterations = []
         self.setup_nlp()
 
     def setup_nlp(self):
@@ -147,27 +151,27 @@ class MPC:
 
         # constrain s
         self.lbx[0:self.nx * (self.N + 1):4] = [0] * len(self.lbx[0:self.nx * (self.N + 1):4])
-        # self.ubx[0:self.nx * (self.N + 1):4] = [self.constrains.s_limit] * len(self.ubx[0:self.nx * (self.N + 1):4])
+        # self.ubx[0:self.nx * (self.N + 1):4] = [self.constraints.s_limit] * len(self.ubx[0:self.nx * (self.N + 1):4])
 
         # constrain n
-        self.lbx[1:self.nx * (self.N + 1):4] = [-self.constrains.n_limit] * len(self.lbx[1:self.nx * (self.N + 1):4])
-        self.ubx[1:self.nx * (self.N + 1):4] = [self.constrains.n_limit] * len(self.ubx[1:self.nx * (self.N + 1):4])
+        self.lbx[1:self.nx * (self.N + 1):4] = [-self.constraints.n_limit] * len(self.lbx[1:self.nx * (self.N + 1):4])
+        self.ubx[1:self.nx * (self.N + 1):4] = [self.constraints.n_limit] * len(self.ubx[1:self.nx * (self.N + 1):4])
 
         # constrain alpha
-        self.lbx[2: self.nx * (self.N + 1):4] = [-self.constrains.alpha_limit] * len(self.lbx[2: self.nx * (self.N + 1):4])
-        self.ubx[2: self.nx * (self.N + 1):4] = [self.constrains.alpha_limit] * len(self.ubx[2: self.nx * (self.N + 1):4])
+        self.lbx[2: self.nx * (self.N + 1):4] = [-self.constraints.alpha_limit] * len(self.lbx[2: self.nx * (self.N + 1):4])
+        self.ubx[2: self.nx * (self.N + 1):4] = [self.constraints.alpha_limit] * len(self.ubx[2: self.nx * (self.N + 1):4])
 
         # constrain v
-        self.lbx[3: self.nx * (self.N + 1): 4] = [0.2] * len(self.lbx[3: self.nx * (self.N + 1): 4])
-        self.ubx[3: self.nx * (self.N + 1): 4] = [self.constrains.v_limit] * len(self.ubx[3: self.nx * (self.N + 1): 4])
+        self.lbx[3: self.nx * (self.N + 1): 4] = [0] * len(self.lbx[3: self.nx * (self.N + 1): 4])
+        self.ubx[3: self.nx * (self.N + 1): 4] = [self.constraints.v_limit] * len(self.ubx[3: self.nx * (self.N + 1): 4])
 
         # constrain v_comm
         self.lbx[self.nx * (self.N + 1):: 2] = [0] * len(self.lbx[self.nx * (self.N + 1):: 2])
-        self.ubx[self.nx * (self.N + 1):: 2] = [self.constrains.v_comm_limit] * len(self.ubx[self.nx * (self.N + 1):: 2])
+        self.ubx[self.nx * (self.N + 1):: 2] = [self.constraints.v_comm_limit] * len(self.ubx[self.nx * (self.N + 1):: 2])
 
         # constrain delta
-        self.lbx[self.nx * (self.N + 1) + 1:: 2] = [-self.constrains.delta_limit] * len(self.lbx[self.nx * (self.N + 1) + 1:: 2])
-        self.ubx[self.nx * (self.N + 1) + 1:: 2] = [self.constrains.delta_limit] * len(self.ubx[self.nx * (self.N + 1) + 1:: 2])
+        self.lbx[self.nx * (self.N + 1) + 1:: 2] = [-self.constraints.delta_limit] * len(self.lbx[self.nx * (self.N + 1) + 1:: 2])
+        self.ubx[self.nx * (self.N + 1) + 1:: 2] = [self.constraints.delta_limit] * len(self.ubx[self.nx * (self.N + 1) + 1:: 2])
 
         opts = {'ipopt.print_level': 0, 'print_time': False, 'ipopt.tol': 1e-6}
         nlp = {'x': ca.vertcat(ca.reshape(self.X, -1, 1), ca.reshape(self.U, -1, 1)), 'f': self.J,
@@ -179,10 +183,15 @@ class MPC:
     def predict(self, x=[0, 0, 0, 0]):
         if self.x0_ is None:
             self.x0_ = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
-        p = x + [0, 0, 0, self.constrains.v_limit]
+        p = x + [0, 0, 0, self.constraints.v_limit]
         res = self.solver(x0=self.x0_, lbx=self.lbx, ubx=self.ubx, lbg=self.lbg, ubg=self.ubg, p=p)
         self.x0_ = res["x"]
         con = ca.reshape(self.x0_[self.nx * (self.N + 1):], self.nu, self.N).full()
+        status = self.solver.stats()  # solver status
+        if status['return_status'] == 'Infeasible_Problem_Detected':
+            print("OCP seems to be infeasible, please check carefully")
+        else:
+            print("OPC is feasible")
         return con[:, 0]
 
     def load_setup(self):
@@ -202,13 +211,179 @@ class MPC:
             print(f"prediction horizon: {self.N}")
             print(f"simple mode: {self.simple_mode}")
 
+class MPC_Fine:
+
+    def __init__(self, path_name='test_traj'):
+        self.No_track = False
+        self.kappa_ref = 0
+        self.x_init = [0, 0, 0, 0]
+        self.path_name = path_name
+        self.interpolator, _, self.s_max = load_path(self.path_name)
+        self.save_root = os.path.join(Script_Root, "DATA", path_name)
+        # self.EKF = EKF(path_name)
+        self.hamster, self.constraints = get_hamster_model(path_name)
+        self.sim_time, self.controller_freq = 16, 60  # second, Hz
+        self.sample_time = 0.1
+        self.N = 10
+        self.nu = 2
+        self.nx = 4
+        self.simple_mode = False
+        self.X = ca.MX.sym("X", self.nx, self.N + 1)
+        self.U = ca.MX.sym("U", self.nu, self.N)
+        self.P = ca.MX.sym("P", 2 * self.nx)
+        self.Q = np.diag([0., 1e1, 1e-2, 1e-2])
+        self.QN = np.diag([0., 1e1, 1e-2, 1e-2])
+
+        self.R = np.diag([1e-3, 1e-3])
+        self.J = 0
+        self.g = []  # currently forced to zero later (system dynamic constraints; multiple shooting)
+        self.lbg = []
+        self.ubg = []
+        self.lbx = []
+        self.ubx = []
+        self.U_opt = []
+        self.X_opt = []
+        # to store more of what is happening; this might seem unnecessary, but for me it was almost always useful to undertsnad what is happening and to make sure my code/ocp makes sense
+        self.OCP_results_X = []  #
+        self.OCP_results_U = []
+        self.Solverstats = []  # store status of solver for each OCP
+        self.feasible_iterations = []  # to check if the ocp was always feasible in closed loop
+
+        self.time_list = []
+        self.x0_ = None
+        self.solver = None
+        self.setup_nlp()
+
+    def setup_nlp(self):
+        # initial constrain
+        self.g.append(self.X[:, 0] - self.P[0:self.nx])
+
+        if self.simple_mode and not self.No_track:
+            s = ca.if_else(self.X[:, 0][0] > self.s_max, self.X[:, 0][0] - self.s_max, self.X[:, 0][0])
+            kappa = self.interpolator(s)
+        elif self.simple_mode and self.No_track:
+            kappa = self.kappa_ref
+            s = ca.if_else(self.X[:, 0][0] > self.s_max, self.X[:, 0][0] - self.s_max, self.X[:, 0][0])
+
+        # system dynamic constrain
+        for i in range(self.N):
+            state, con = self.X[:, i], self.U[:, i]
+
+            if not self.simple_mode:
+                s = ca.if_else(self.X[:, i][0] > self.s_max, self.X[:, i][0] - self.s_max, self.X[:, i][0])
+                kappa = self.interpolator(s)
+            L =self.hamster.length_front + self.hamster.length_rear
+            l_r = self.hamster.length_rear
+            alpha_ref = -ca.asin(kappa * l_r)
+            delta_ref = L/l_r * ca.asin(kappa*l_r)
+            con_error = con - ca.vertcat(delta_ref, self.P[-1])
+            x_error = state - ca.vertcat(0,0,alpha_ref,self.P[-1])
+            self.J += ca.mtimes(ca.mtimes(x_error.T, self.Q), x_error) \
+                      + ca.mtimes(ca.mtimes(con_error.T, self.R), con_error)
+            state_dot = self.hamster.dynamic(state, con, kappa)
+            state_next = state + self.sample_time * state_dot
+            self.g.append(state_next - self.X[:, i + 1])  # multiple shooting constraint
+        if not self.simple_mode:
+            s = ca.if_else(self.X[:, -1][0] > self.s_max, self.X[:, -1][0] - self.s_max, self.X[:, 0-1][0])
+            kappa = self.interpolator(s)
+        alpha_ref = -ca.asin(kappa * l_r)
+        x_error = self.X[:, -1] - ca.vertcat(0,0,alpha_ref,self.P[-1])
+        self.J += ca.mtimes(ca.mtimes(x_error.T, self.QN), x_error)
+
+        self.g = ca.vertcat(*self.g)
+        self.lbg = [0] * self.g.size()[0]
+        self.ubg = [0] * self.g.size()[0]
+        self.lbx = [-ca.inf] * (self.nx * (self.N + 1) + self.nu * self.N)
+        self.ubx = [ca.inf] * (self.nx * (self.N + 1) + self.nu * self.N)
+
+        # constrain s
+        self.lbx[0:self.nx * (self.N + 1):4] = [0] * len(self.lbx[0:self.nx * (self.N + 1):4])
+        # self.ubx[0:self.nx * (self.N + 1):4] = [self.constraints.s_limit] * len(self.ubx[0:self.nx * (self.N + 1):4])
+
+        # constrain n
+        self.lbx[1:self.nx * (self.N + 1):4] = [-self.constraints.n_limit] * len(self.lbx[1:self.nx * (self.N + 1):4])
+        self.ubx[1:self.nx * (self.N + 1):4] = [self.constraints.n_limit] * len(self.ubx[1:self.nx * (self.N + 1):4])
+
+        # constrain alpha
+        self.lbx[2: self.nx * (self.N + 1):4] = [-self.constraints.alpha_limit] * len(
+            self.lbx[2: self.nx * (self.N + 1):4])
+        self.ubx[2: self.nx * (self.N + 1):4] = [self.constraints.alpha_limit] * len(
+            self.ubx[2: self.nx * (self.N + 1):4])
+
+        # constrain v
+        self.lbx[3: self.nx * (self.N + 1): 4] = [0] * len(self.lbx[3: self.nx * (self.N + 1): 4])
+        self.ubx[3: self.nx * (self.N + 1): 4] = [self.constraints.v_limit] * len(
+            self.ubx[3: self.nx * (self.N + 1): 4])
+
+        # constrain v_comm
+        self.lbx[self.nx * (self.N + 1):: 2] = [0] * len(self.lbx[self.nx * (self.N + 1):: 2])
+        self.ubx[self.nx * (self.N + 1):: 2] = [self.constraints.v_comm_limit] * len(
+            self.ubx[self.nx * (self.N + 1):: 2])
+
+        # constrain delta
+        self.lbx[self.nx * (self.N + 1) + 1:: 2] = [-self.constraints.delta_limit] * len(
+            self.lbx[self.nx * (self.N + 1) + 1:: 2])
+        self.ubx[self.nx * (self.N + 1) + 1:: 2] = [self.constraints.delta_limit] * len(
+            self.ubx[self.nx * (self.N + 1) + 1:: 2])
+
+        opts = {'ipopt.print_level': 0, 'print_time': False, 'ipopt.tol': 1e-6}
+        nlp = {'x': ca.vertcat(ca.reshape(self.X, -1, 1), ca.reshape(self.U, -1, 1)), 'f': self.J,
+               'g': self.g, 'p': self.P}
+        self.solver = ca.nlpsol('mpc', 'ipopt', nlp, opts)
+
+        print("set up nlp solver")
+
+    def predict(self, x=[0, 0, 0, 0]):
+        if self.x0_ is None:
+            x0x = ca.repmat([0,0,0,0], (self.N + 1))
+            x0u = ca.repmat([self.constraints.v_limit, self.hamster.length_front * self.kappa_ref], self.N)
+            self.x0_ = ca.vertcat(x0x, x0u)
+            # self.x0_ = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
+        p = x + [0, 0, 0, self.constraints.v_limit]
+
+        res = self.solver(x0=self.x0_, lbx=self.lbx, ubx=self.ubx, lbg=self.lbg, ubg=self.ubg, p=p)
+
+        self.x0_ = res["x"]
+        con = ca.reshape(self.x0_[self.nx * (self.N + 1):], self.nu, self.N).full()  # planned control input (due to nlp formulation they are stored at the end of the solution vector)
+
+        # store all OCP results
+        status = self.solver.stats()  # solver status
+        if status['return_status'] == 'Infeasible_Problem_Detected':
+            print("OCP seems to be infeasible, please check carefully")
+        else:
+            print("OPC is feasible")
+
+        # U_OCP = con  # planned input sequence
+        # X_OCP = ca.reshape(self.x0_[0:self.nx * (self.N + 1)], self.nx, self.N + 1).full()  # predicted state sequence
+
+        u_star = con[:,0]
+        u_star[0] = 0.2 if u_star[0]<0.2 else u_star[0]
+        return u_star
+
+    def load_setup(self):
+        with open(os.path.join(Script_Root, "setup.json"), "r")as f:
+            data = json.load(f)
+            self.Q = np.diag(data["Q"])
+            self.QN = np.diag(data["QN"])
+            self.R = np.diag(data["R"])
+            self.N = data["N"]
+            self.sample_time = data["sample_time"]
+            self.simple_mode = data["simple_mode"]
+            print("load set up data: ")
+            print(f"Q: {self.Q}")
+            print(f"QN: {self.QN}")
+            print(f"R: {self.R}")
+            print(f"sample time step: {self.sample_time}")
+            print(f"prediction horizon: {self.N}")
+            print(f"simple mode: {self.simple_mode}")
 class Controller(Node):
 
     def __init__(self, name):
         super().__init__(name)
         self.get_logger().info("create Controller Node !")
         self.data_root = os.path.join(Script_Root, "DATA",name)
-        self.mpc = MPC(name)
+        # self.mpc = MPC(name)
+        self.mpc = MPC_Fine(name)
         self.controller_frequency = 10  # Hz
         self.constant_velocity = False
         with open(os.path.join(Script_Root, "setup.json"))as f:
@@ -296,7 +471,10 @@ def start_controller(args=None):
         if constant:
             case_name = "test_traj_mpc_simple_constant" if sim else "test_traj_mpc_constant"
         else:
-            case_name = "test_traj_mpc_simple" if sim else "test_traj_mpc"
+            # case_name = "val_traj_mpc_simple" if sim else "val_traj_mpc"
+            # case_name = "test_traj_mpc_simple" if sim else "test_traj_mpc"
+            # case_name = "val_traj_mpc_fine_simple" if sim else "val_traj_mpc_fine"
+            case_name = "test_traj_mpc_fine_simple" if sim else "test_traj_mpc_fine"
     rclpy.init(args=args)
 
     controller_handle = Controller(name=case_name)

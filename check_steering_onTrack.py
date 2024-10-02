@@ -33,31 +33,34 @@ def reset_nlp(MPC):
     MPC.ubx = []
     MPC.U_opt = []
     MPC.X_opt = []
-    MPC.setup_nlp() 
+
+    MPC.setup_nlp()
+
     return MPC
 
 
-kappa_test = np.linspace(-2,2,100)
-' MPC '
+kappa_test = np.linspace(-2,2,10)
+# ' MPC '
 path_name = 'test_traj_mpc'
 mpc = MPC(path_name)
 mpc.No_track= True
 mpc.simple_mode = True
 mpc.kappa_ref = 1
-mpc.N = 20
+mpc.N = 10
 mpc.x_init = [0,0,0,0.6] # start on the track with desired ref vel (currently fixed to 0.6)
 # mpc.Q = np.diag([0., 10, 10, 1e-1])
 # mpc.QN = np.diag([0., 10, 10, 1e-1])
 # mpc.Q = np.diag([0., 0, 10, 1e-1])
 # mpc.QN = np.diag([0., 0, 10, 1e-1])
 # setup with "new" conditions
-mpc = reset_nlp(mpc)
+
+# mpc = reset_nlp(mpc)
 # mpc.sim() # maybe it is slightly off, i am not sur eabout the solution at the start of the closed loop sim
 # X_cl = mpc.X_opt
 # U_cl = mpc.U_opt
-x0x = ca.repmat(mpc.x_init,(mpc.N + 1))
-x0u = ca.repmat([0.6 ,0.25*mpc.kappa_ref],mpc.N)
-x0 = ca.vertcat(x0x,x0u)
+# x0x = ca.repmat(mpc.x_init,(mpc.N + 1))
+# x0u = ca.repmat([0.6 ,0.25*mpc.kappa_ref],mpc.N)
+# x0 = ca.vertcat(x0x,x0u)
 
 u_steer_mpc = []
 for n in range(len(kappa_test)):
@@ -90,7 +93,7 @@ class GP_2d(gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return MultivariateNormal(mean_x, covar_x)
     
-state_dict = torch.load('gp/DATA/test_traj_2D/gp_model.pth')
+state_dict = torch.load('gp/DATA/test_traj_2D/gp_2D.pth')
 likelihood = GaussianLikelihood(noise_constraint=Interval(1e-4, 0.1)).to(torch.float32)
 #self.train_x, self.train_y = self.load_data(os.path.join(self.data_root, 'train_data.csv'))
 data_path = 'gp/DATA/test_traj_2D/train_data.csv'
@@ -157,5 +160,6 @@ u_steer_3d=np.array(u_steer_3d)
 
 plt.plot(kappa_test,u_steer_3d,label='3D_GP')
 plt.legend()
+plt.show()
 
 
