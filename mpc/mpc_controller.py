@@ -194,7 +194,7 @@ class MPC:
             print("there was an infeasible problem. Please check carefully.")
         else:
             print('everything seemed to be feasible')    
-        self.save_data()
+        #self.save_data()
 
     def save_data(self):
         path_df = pd.read_csv(os.path.join(self.save_root, "path.csv"))
