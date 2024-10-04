@@ -16,13 +16,13 @@ class MPC:
     def __init__(self, path_name='test_traj'):
         self.No_track = False
         self.kappa_ref = 0
-        self.x_init = [0, 0.05, 0, 0]  #s, n, alpha, v
+        self.x_init = [0, 0.1, 0, 0]  #s, n, alpha, v
         self.path_name = path_name
         self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
         self.hamster, self.constraints = get_hamster_model(path_name)
-        self.sim_time, self.controller_freq = 16, 60  # second, Hz
+        self.sim_time, self.controller_freq = 4, 60  # second, Hz
         self.sample_time = 0.1
         self.N = 10
         self.nu = 2
@@ -31,14 +31,14 @@ class MPC:
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
-        self.Q = np.diag([0., 1e1, 1e-2, 1e-2])
-        self.QN = np.diag([0., 1e1, 1e-2, 1e-2])
+        self.Q = np.diag([0., 1e1, 1e-3, 1e-2])
+        self.QN = np.diag([0., 1e1, 1e-3, 1e-2])
         # self.Q = np.diag([0, 0, 0, 1e-1])
         # self.QN = np.diag([0, 0, 0, 1e-1])
         # self.Q = np.diag([0, 1, 1, 1e-1])
         # self.QN = np.diag([0, 1, 1, 1e-1])
         # self.R = np.diag([1e-1, 1e-1])
-        self.R = np.diag([1e-3, 1e-3])
+        self.R = np.diag([1e-3, 1e-3, 1e-1, 1e-1])  # v_error, delta_error, v_diff, delta_diff
         self.J = 0
         self.g = []  # currently forced to zero later (system dynamic constraints; multiple shooting)
         self.lbg = []
@@ -66,8 +66,8 @@ class MPC:
             kappa = self.interpolator(s)
         elif self.simple_mode and self.No_track:
             kappa = self.kappa_ref
-            s = ca.if_else(self.X[:, 0][0] > self.s_max, self.X[:, 0][0] - self.s_max, self.X[:, 0][0])
-
+            # s = ca.if_else(self.X[:, 0][0] > self.s_max, self.X[:, 0][0] - self.s_max, self.X[:, 0][0])
+        con_pre = np.array([0, 0])
         # system dynamic constrain
         for i in range(self.N):
             state, con = self.X[:, i], self.U[:, i]
@@ -80,14 +80,17 @@ class MPC:
             alpha_ref = -ca.asin(kappa * l_r)
             delta_ref = L/l_r * ca.asin(kappa*l_r)
             con_error = con - ca.vertcat(delta_ref, self.P[-1])
+            con_diff = con - con_pre
+            con_pre = con
+            con_join = ca.vertcat(con_error, con_diff)
             x_error = state - ca.vertcat(0,0,alpha_ref,self.P[-1])
             self.J += ca.mtimes(ca.mtimes(x_error.T, self.Q), x_error) \
-                      + ca.mtimes(ca.mtimes(con_error.T, self.R), con_error)
+                      + ca.mtimes(ca.mtimes(con_join.T, self.R), con_join)
             state_dot = self.hamster.dynamic(state, con, kappa)
             state_next = state + self.sample_time * state_dot
             self.g.append(state_next - self.X[:, i + 1])  # multiple shooting constraint
         if not self.simple_mode:
-            s = ca.if_else(self.X[:, -1][0] > self.s_max, self.X[:, -1][0] - self.s_max, self.X[:, 0-1][0])
+            s = ca.if_else(self.X[:, -1][0] > self.s_max, self.X[:, -1][0] - self.s_max, self.X[:, -1][0])
             kappa = self.interpolator(s)
         alpha_ref = -ca.asin(kappa * l_r)
         x_error = self.X[:, -1] - ca.vertcat(0,0,alpha_ref,self.P[-1])
