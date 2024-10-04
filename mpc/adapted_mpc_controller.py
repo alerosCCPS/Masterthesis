@@ -83,7 +83,7 @@ class MPC:
             l_r = self.hamster.length_rear
             alpha_ref = -ca.asin(kappa * l_r)
             delta_ref = L/l_r * ca.asin(kappa*l_r)
-            con_error = con - ca.vertcat(self.P[-1], delta_ref)
+            con_error = con - ca.vertcat( self.P[-1],delta_ref)
             con_diff = con - con_pre
             con_pre = con
             con_join = ca.vertcat(con_error, con_diff)
@@ -173,7 +173,9 @@ class MPC:
         # x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
         x0x = ca.repmat(x_init, (self.N + 1))
         kappa = self.interpolator(x_init[0]).full()
-        x0u = ca.repmat([0.6, -ca.asin(kappa * self.hamster.length_rear)], self.N)
+        L =self.hamster.length_front + self.hamster.length_rear
+        l_r = self.hamster.length_rear
+        x0u = ca.repmat([0.6, L/l_r * ca.asin(kappa*l_r)], self.N)
         x0 = ca.vertcat(x0x, x0u)
         for i in range(sim_iter):
             self.X_opt.append(x_init)
