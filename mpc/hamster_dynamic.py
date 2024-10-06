@@ -59,6 +59,7 @@ def get_hamster_model(path_file_name='circle'):
 
     model.dynamic = ca.Function("dynamic", [x,u, kappa], [rhs])
 
+<<<<<<< HEAD
     constraints = types.SimpleNamespace()
     constraints.s_limit = path_length  # total curve length
     constraints.n_limit = 0.25  # distance bias
@@ -69,5 +70,16 @@ def get_hamster_model(path_file_name='circle'):
     constraints.v_comm_limit = 0.6# 0.6
     constraints.targ_vel = 0.5
     constraints.delta_limit = deg2R(30)  # 30 degree
+=======
+    constrains = types.SimpleNamespace()
+    constrains.s_limit = path_length  # total curve length
+    constrains.n_limit = 0.1 #ca.inf#0.1  # distance bias
+    constrains.alpha_limit = ca.pi*0.5 #ca.inf#ca.pi*0.5
+    # constrains.n_limit = 1e-2  # distance bias
+    # constrains.alpha_limit = 1e-2
+    constrains.v_limit = 1#0.6  # m/s
+    constrains.v_comm_limit = 1# 0.6
+    constrains.delta_limit = deg2R(45)#deg2R(90)#deg2R(28)  # 28 degree
+>>>>>>> cf92cca88c64aaf1a0ae10aa1bec3aa9044f49aa
 
     return model, constraints
