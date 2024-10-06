@@ -9,36 +9,35 @@ from ekf import EKF
 import os
 
 Script_Root = os.path.abspath(os.path.dirname(__file__))
-
+deg2R = lambda x: ca.pi*(x/180)
+r2Deg = lambda x: 180*x/np.pi
 
 class MPC:
 
     def __init__(self, path_name='test_traj'):
+        self.threshold_delta = 25
+        # self.rectify = 0.5
         self.No_track = False
         self.kappa_ref = 0
-        self.x_init = [0, 0.1, 0, 0]  #s, n, alpha, v
+        self.x_init = [0, 0.0, 0, 0]  #s, n, alpha, v
         self.path_name = path_name
         self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
-        self.EKF = EKF(path_name)
+        # self.EKF = EKF(path_name)
         self.hamster, self.constraints = get_hamster_model(path_name)
-        self.sim_time, self.controller_freq = 4, 60  # second, Hz
+        self.sim_time, self.controller_freq = 18, 60  # second, Hz
         self.sample_time = 0.1
-        self.N = 10
+        self.N = 20
         self.nu = 2
         self.nx = 4
         self.simple_mode = False
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
-        self.Q = np.diag([0., 1e1, 1e-3, 1e-2])
-        self.QN = np.diag([0., 1e1, 1e-3, 1e-2])
-        # self.Q = np.diag([0, 0, 0, 1e-1])
-        # self.QN = np.diag([0, 0, 0, 1e-1])
-        # self.Q = np.diag([0, 1, 1, 1e-1])
-        # self.QN = np.diag([0, 1, 1, 1e-1])
-        # self.R = np.diag([1e-1, 1e-1])
-        self.R = np.diag([1e-3, 1e-3, 1e-1, 1e-1])  # v_error, delta_error, v_diff, delta_diff
+        self.Q = np.diag([0., 5e2, 1e-1, 1e1])
+        self.QN = np.diag([0., 1e3, 1e-1, 1e1])
+
+        self.R = np.diag([1e-3, 1e-3, 1e1, 1e1])  # v_error, delta_error, v_diff, delta_diff
         self.J = 0
         self.g = []  # currently forced to zero later (system dynamic constraints; multiple shooting)
         self.lbg = []
@@ -61,10 +60,10 @@ class MPC:
         # initial constrain
         self.g.append(self.X[:, 0] - self.P[0:self.nx])
 
-        if self.simple_mode and not self.No_track:
+        if self.simple_mode:
             s = ca.if_else(self.X[:, 0][0] > self.s_max, self.X[:, 0][0] - self.s_max, self.X[:, 0][0])
             kappa = self.interpolator(s)
-        elif self.simple_mode and self.No_track:
+        else:
             kappa = self.kappa_ref
             # s = ca.if_else(self.X[:, 0][0] > self.s_max, self.X[:, 0][0] - self.s_max, self.X[:, 0][0])
         con_pre = np.array([0, 0])
@@ -78,8 +77,12 @@ class MPC:
             L =self.hamster.length_front + self.hamster.length_rear
             l_r = self.hamster.length_rear
             alpha_ref = -ca.asin(kappa * l_r)
-            delta_ref = L/l_r * ca.asin(kappa*l_r)
-            con_error = con - ca.vertcat(delta_ref, self.P[-1])
+            # delta_ref = 2*ca.arcsin(kappa*self.hamster.length_rear)
+            # delta_ref = ca.arctanh(ca.tan(delta_ref)/(self.hamster.steer_k1*L))/self.hamster.steer_k2
+            delta_ref = ca.arctanh(kappa/self.hamster.steer_k1)/self.hamster.steer_k2
+            delta_ref = ca.if_else(delta_ref > deg2R(self.threshold_delta), deg2R(self.threshold_delta), delta_ref )
+            delta_ref = ca.if_else(delta_ref < -deg2R(self.threshold_delta), -deg2R(self.threshold_delta), delta_ref)
+            con_error = con - ca.vertcat(self.P[-1], delta_ref)
             con_diff = con - con_pre
             con_pre = con
             con_join = ca.vertcat(con_error, con_diff)
@@ -92,7 +95,8 @@ class MPC:
         if not self.simple_mode:
             s = ca.if_else(self.X[:, -1][0] > self.s_max, self.X[:, -1][0] - self.s_max, self.X[:, -1][0])
             kappa = self.interpolator(s)
-        alpha_ref = -ca.asin(kappa * l_r)
+        alpha_ref = -ca.asin(kappa * self.hamster.length_rear)
+
         x_error = self.X[:, -1] - ca.vertcat(0,0,alpha_ref,self.P[-1])
         self.J += ca.mtimes(ca.mtimes(x_error.T, self.QN), x_error)
 
@@ -140,7 +144,7 @@ class MPC:
         print("set up nlp solver")
 
     def predict(self, x0=ca.repmat(0, 4 * (20 + 1) + 2 * 20, 1), x=[0, 0, 0, 0]):
-        p = x + [0, 0, 0, 0.6]
+        p = x + [0, 0, 0, self.constraints.targ_vel]
         start = time.time()
         res = self.solver(x0=x0, lbx=self.lbx, ubx=self.ubx, lbg=self.lbg, ubg=self.ubg, p=p)
         cal_time = time.time() - start
@@ -149,29 +153,30 @@ class MPC:
 
         # store all OCP results
         status = self.solver.stats()  # solver status
+        status_flag = True
         if status['return_status'] == 'Infeasible_Problem_Detected':
             print("OCP seems to be infeasible, please check carefully")
+            status_flag = False
 
         U_OCP = con  # planned input sequence
         X_OCP = ca.reshape(x0_res[0:self.nx * (self.N + 1)], self.nx, self.N + 1).full()  # predicted state sequence
 
         u_star = con[:,0]
         u_star[0] = 0.2 if u_star[0]<0.2 else u_star[0]
-        return x0_res, con[:, 0], cal_time, status, U_OCP, X_OCP
+        return x0_res, u_star, cal_time, status, U_OCP, X_OCP, status_flag
 
     def sim(self):
 
         #  x = [s, n, alpha, v]
-        # x_init = [0, 0.04, 0.05*np.pi, 0]
-        x_init = self.x_init  # [0, 0, 0, 0] #[0, 0, 0, 0.2]
+        x_init = self.x_init
 
         sim_iter = int(self.sim_time * self.controller_freq)
         # x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
         x0x = ca.repmat(x_init, (self.N + 1))
-        x0u = ca.repmat([0.6, self.hamster.length_front * self.kappa_ref], self.N)
+        x0u = ca.repmat([self.constraints.v_limit, self.hamster.length_front * self.kappa_ref], self.N)
         x0 = ca.vertcat(x0x, x0u)
         for i in range(sim_iter):
-            x0, con, cal_time, status, U_OCP, X_OCP = self.predict(x0, list(x_init))
+            x0, con, cal_time, status, U_OCP, X_OCP, _ = self.predict(x0, list(x_init))
             self.time_list.append(cal_time)
             self.OCP_results_X.append(X_OCP)
             self.OCP_results_U.append(U_OCP)
@@ -186,14 +191,16 @@ class MPC:
 
             # x_prior = x_init
             # u_prior = con
-            #
-            # #  adding noise to simulate measured data
-            #
+
+            #  adding noise to simulate measured data
+
             # z_prior = x_prior + np.random.normal(0, 0.01, self.nx)
-            #
+            # noise = np.random.normal(0, 0.01)
+            # z_prior = x_prior + np.array([0, noise, 0, 0])
             # # Kalman filter
-            # x_posterior = self.EKF.process(x=x_prior, u=u_prior, z=z_prior)
-            # x_init = x_posterior
+            # # x_posterior = self.EKF.process(x=x_prior, u=u_prior, z=z_prior)
+            # # x_init = x_posterior
+            # x_init = z_prior
 
             if x_init[0] >= self.constraints.s_limit:
                 print("start next round ", x_init[0])
@@ -226,15 +233,20 @@ class MPC:
 
 
 if __name__ == "__main__":
-    # path_name = 'test_traj_mpc_simple'
-    # path_name = 'test_traj_reverse'
-    path_name = 'test_traj_mpc'
-    # path_name = 'val_traj_mpc'
-    # path_name = 'val_traj_mpc_simple'
-    path_name = 'test_traj_mpc_refine'
-    mpc = MPC(path_name)
-    mpc.sim()
-    plo = SimPlotter(path_name)
-    plo.plot_traj()
-    replot = ResultePlotter(path_name)
-    replot.plot()
+
+    # path_name = 'val_traj_mpc_adapted'
+    # path_name = 'val_traj_mpc_adapted_simple'
+    # path_name = 'test_traj_mpc_adapted_simple'
+    # path_name = 'test_traj_mpc_adapted'
+    for p in [
+        # 'val_traj_mpc_adapted',
+        # 'val_traj_mpc_adapted_simple',
+        # 'test_traj_mpc_adapted_simple',
+        'test_traj_mpc_adapted'
+    ]:
+        mpc = MPC(p)
+        mpc.sim()
+        plo = SimPlotter(p)
+        plo.plot_traj()
+        replot = ResultePlotter(p)
+        replot.plot()

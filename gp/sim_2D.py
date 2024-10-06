@@ -109,6 +109,7 @@ class Simulator:
             x_value = self.x[0,1:3].unsqueeze(0)
             u, lower, upper = self.predict(x_value)
             u +=self.k*self.x[0,0].item()
+            # u = self.k * self.x[0, 0]
             # print(x_value, u)
             self.update(u)
 

@@ -1,7 +1,7 @@
-from gp.sim_3D import Simulator as Sim3D
-from gp.sim_2D import Simulator as Sim2D
-from gp.sim_3D_LF import Simulator as Sim3DLF
-from gp.sim_2D_LF import Simulator as Sim2DLF
+from gp.adapted_data_set.sim_3D import Simulator as Sim3D
+from gp.adapted_data_set.sim_2D import Simulator as Sim2D
+from gp.adapted_data_set.sim_3D_LF import Simulator as Sim3DLF
+from gp.adapted_data_set.sim_2D_LF import Simulator as Sim2DLF
 from utils import ReSampler, Criteria
 import numpy as np
 import os
@@ -74,8 +74,8 @@ def plotter():
 
 
 if __name__ == '__main__':
-    # resampler = ReSampler()
-    # resampler.process_data()
-    gp_evaluator = GPEval()
-    gp_evaluator.eval()
-    plotter()
+    resampler = ReSampler()
+    resampler.process_data()
+    # gp_evaluator = GPEval()
+    # gp_evaluator.eval()
+    # plotter()

@@ -22,15 +22,17 @@ class MPC:
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
         self.hamster, self.constraints = get_hamster_model(path_name)
-        self.sim_time, self.controller_freq = 16, 60  # second, Hz
+        self.sim_time, self.controller_freq = 20, 60  # second, Hz
         self.sample_time = 0.1
         self.N = 10
         self.nu = 2
         self.nx = 4
-        self.simple_mode = False
+        self.simple_mode = True
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx) 
+        # self.Q = np.diag([0., 1e-2, 1e-2, 1e-1])
+        # self.QN = np.diag([0., 1e-2, 1e-2, 1e-1])
         self.Q = np.diag([0., 1e-2, 0, 1e-1])
         self.QN = np.diag([0., 1e-2, 0, 1e-1])
         # self.Q = np.diag([0, 0, 0, 1e-1])
@@ -140,8 +142,9 @@ class MPC:
             
         U_OCP = con # planned input sequence
         X_OCP = ca.reshape(x0_res[0:self.nx * (self.N + 1)], self.nx, self.N+1).full() #predicted state sequence
-
-        return x0_res, con[:, 0], cal_time, status, U_OCP, X_OCP
+        u_star = con[:,0]
+        u_star[0] = 0.2 if u_star[0]<0.2 else u_star[0]
+        return x0_res, u_star, cal_time, status, U_OCP, X_OCP
 
     def sim(self):
 
@@ -210,7 +213,7 @@ if __name__ == "__main__":
     # path_name = 'test_traj_mpc_simple'
     # path_name = 'test_traj_reverse'
     # path_name = 'test_traj_mpc'
-    path_name = 'val_traj_mpc'
+    # path_name = 'val_traj_mpc'
     path_name = 'val_traj_mpc_simple'
     mpc = MPC(path_name)
     mpc.sim()

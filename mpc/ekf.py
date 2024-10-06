@@ -20,7 +20,7 @@ class EKF:
         self.u = np.zeros(2)
         self.z = np.zeros(4)
         self.Q = np.diag([0,0,0,0])
-        self.R = np.diag([0.01]*4)
+        self.R = np.diag([0,0.05,0,0])
 
     def update_F(self, x, u):
         s, n, alpha, v = x[0], x[1], x[2], x[3]
@@ -49,7 +49,7 @@ class EKF:
 
     def update(self, z):
         self.z = np.array(z)
-        K_k = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(np.dot(np.dot(self.H, self.P), self.H.T) + self.R))
+        K_k = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(np.dot(np.dot(self.H, self.P), self.H.T) + self.R + np.diag([1e-5]*4)))
         self.x = self.x + np.dot(K_k, (self.z - self.x))
         self.P = np.dot((np.eye(4) - np.dot(K_k, self.H)), self.P)
     def process(self, x, u, z):
@@ -67,3 +67,6 @@ class EKF:
             return splev(s, tck=tck)
 
         return interp
+if __name__ == "__main__":
+    noise = np.random.normal(0, 0.01)
+    print(noise)

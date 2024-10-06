@@ -188,7 +188,7 @@ class ResultePlotter:
 
 if __name__ == '__main__':
     # path_name = 'test_traj_mpc'
-    path_name = 'test_traj_mpc_fine'
+    path_name = 'test_traj_mpc_adapted'
     # path_name = 'test_traj_mpc_constant'
     # path_name = 'test_traj_mpc_simple'
     # path_name = 'val_traj_mpc_simple'

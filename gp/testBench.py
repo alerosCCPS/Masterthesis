@@ -29,8 +29,8 @@ def test_gp_3D():
 
 def test_gp_2D():
     reversed = False
-    # case_name = 'test_traj_2D'
-    case_name = 'val_traj_2D'
+    case_name = 'test_traj_2D'
+    # case_name = 'val_traj_2D'
     # sampler = Sampler(case_name,sample_rate=0.1)
     # sampler.sampling()
     #
@@ -81,7 +81,7 @@ def test_gp_2D_LF():
     replot = ResultePlotter(case_name)
     replot.plot()
 
-test_gp_3D()
+# test_gp_3D()
 test_gp_2D()
-test_gp_3D_LF()
-test_gp_2D_LF()
+# test_gp_3D_LF()
+# test_gp_2D_LF()

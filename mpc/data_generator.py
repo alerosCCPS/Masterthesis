@@ -7,18 +7,28 @@ sys.path.append(os.path.join(Script_Root,".."))
 from scipy.interpolate import splev, splrep
 from utils import check_path
 from hamster_dynamic import get_hamster_model
-from mpc.mpc_controller import MPC
+# from mpc.mpc_controller import MPC
+from mpc.adapted_mpc_controller import MPC
 import casadi as ca
+import math
 
-
-n_limit = 0.1
-alpha_limit = np.pi * 0.35
+deg2R = lambda x: math.pi*(x/180)
+r2Deg = lambda x: 180*x/np.pi
+n_limit = 0.2
+alpha_limit = np.pi * 0.4
 class DataGen:
 
     def __init__(self, case_name="test_traj"):
         self.case_name = case_name
         # self.k = 0.2359
-        self.k = 0.25
+        # self.k = 0.25
+
+        self.targ_vel = 0.4
+        self.max_steer = deg2R(25)
+        self.L = 0.25
+        self.steer_k1 = 2.2
+        self.steer_k2 = 5
+        self.length_rear = 0.125
         self.look_fw_dis = 0.15
         self.data_root = os.path.join(Script_Root, "DATA", case_name)
         df = pd.read_csv(os.path.join(self.data_root, "path.csv"))
@@ -27,12 +37,12 @@ class DataGen:
             return splev(s,tck=tck)
         self.kappa_of_s = f
 
-        self.save_root = os.path.join(self.data_root, "synthetic")
+        self.save_root = os.path.join(self.data_root, "synthetic_adapted")
         check_path(self.save_root)
         _, self.constrains = get_hamster_model(case_name)
         self.sample_dis = 0.5
         self.resolution_n = 0.025
-        self.resolution_alpha = 0.35
+        self.resolution_alpha = 0.25
 
         # self.sample_dis = 10
         # self.resolution_n = 0.005
@@ -40,6 +50,7 @@ class DataGen:
 
         self.position = 0
         self.mpc = MPC(case_name)
+        self.N = self.mpc.N
         self.data = []
 
     def generator(self):
@@ -57,7 +68,7 @@ class DataGen:
             alpha_upper = alpha_limit
             alpha_lower = -alpha_limit
             self.sampling(self.position,local_kappa, n_upper, n_lower, alpha_upper, alpha_lower)
-        #self.save_data()
+        self.save_data()
 
     def sampling(self, s, local_kappa, n_upper, n_lower, alpha_upper, alpha_lower):
         # iter_n = int((n_upper - n_lower)/self.resolution_n)+1
@@ -75,22 +86,35 @@ class DataGen:
                         [alpha_threshold + i*self.resolution_alpha for i in range(1+int((alpha_upper-alpha_threshold)/self.resolution_alpha))]
 
         print(f"iter_n = {len(n_sampled)}, iter_alpha={len(alpha_sampled)}")
+        look_fw = self.kappa_of_s(s + self.look_fw_dis).item()
         for n in n_sampled:
             for alpha in alpha_sampled:
         # for i in range(iter_n):
         #     n = n_lower + i*self.resolution_n
         #     for j in range(iter_alpha):
         #         alpha = alpha_lower + j*self.resolution_alpha
-                x = [s, n, alpha, 0.6]
-                _, u, _ , _,_,_= self.mpc.predict(x0=ca.repmat(0, 4 * (self.mpc.N + 1) + 2 * self.mpc.N, 1),x=x)
-                look_fw = self.kappa_of_s(s+self.look_fw_dis).item()
-                print([local_kappa,look_fw, s, n, alpha, 0.6] + list(u))
-                self.data.append([local_kappa,look_fw, s, n, alpha, 0.6]+list(u))
+                x = [s, n, alpha, 0.3]
+                x0x = ca.repmat([0,0,0,0], (self.N + 1))
+                x0u = ca.repmat([self.targ_vel, self.L/2 * local_kappa], self.N)
+                x0 = ca.vertcat(x0x, x0u)
+                _, u, _ , _,_,_, status_flag= self.mpc.predict(x0=x0, x=x)
+                if not status_flag:
+                    print("skip infeasible results!")
+                    print([local_kappa, look_fw, s, n, alpha, self.targ_vel] + list(u))
+                    continue
+                # print([local_kappa,look_fw, s, n, alpha, self.targ_vel] + list(u))
+                self.data.append([local_kappa,look_fw, s, n, alpha, self.targ_vel]+list(u))
 
     def save_data(self):
         heads = ["curvature",'look_fw_curvature', 's', 'n', 'alpha', 'v', 'v_comm', 'delta', 'rec_diff']
         data = np.array(self.data)
-        rec_diff = data[:,-1] - self.k*data[:,0]
+        # rec_diff = data[:,-1] - self.k*data[:,0]
+
+        # delta_ref = np.arctanh(np.tan(data[:, 0] *self.L)/(self.steer_k1 * self.L) )/ self.steer_k2
+        delta_ref = np.arctanh(data[:, 0]/self.steer_k1) / self.steer_k2
+        delta_ref[delta_ref>self.max_steer] = self.max_steer
+        delta_ref[delta_ref<-self.max_steer] = -self.max_steer
+        rec_diff = data[:, -1] - delta_ref
         data = np.hstack((data, rec_diff.reshape(-1,1)))
         df = pd.DataFrame(data,columns=heads)
         case = self.case_name.strip().split("_")[-1]
