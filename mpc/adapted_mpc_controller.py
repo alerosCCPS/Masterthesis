@@ -16,13 +16,14 @@ class MPC:
     def __init__(self, path_name='test_traj'):
         self.No_track = False
         self.kappa_ref = 0
-        self.x_init = [0, 0.1, 0, 0]  #s, n, alpha, v
+        #self.x_init = [0, 0.1, 0, 0]  #s, n, alpha, v
+        self.x_init = [0, 0, -0.07496703, 0.6]  #s, n, alpha_ref[0], v_ref
         self.path_name = path_name
         self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
         self.EKF = EKF(path_name)
         self.hamster, self.constraints = get_hamster_model(path_name)
-        self.sim_time, self.controller_freq = 4, 60  # second, Hz
+        self.sim_time, self.controller_freq = 20, 60  # second, Hz
         self.sample_time = 0.1
         self.N = 10
         self.nu = 2
@@ -33,12 +34,15 @@ class MPC:
         self.P = ca.MX.sym("P", 2 * self.nx)
         self.Q = np.diag([0., 1e1, 1e-3, 1e-2])
         self.QN = np.diag([0., 1e1, 1e-3, 1e-2])
+        # self.Q = np.diag([0., 1e2, 1, 1])
+        # self.QN = np.diag([0., 1e2, 1, 1])
         # self.Q = np.diag([0, 0, 0, 1e-1])
         # self.QN = np.diag([0, 0, 0, 1e-1])
         # self.Q = np.diag([0, 1, 1, 1e-1])
         # self.QN = np.diag([0, 1, 1, 1e-1])
         # self.R = np.diag([1e-1, 1e-1])
-        self.R = np.diag([1e-3, 1e-3, 1e-1, 1e-1])  # v_error, delta_error, v_diff, delta_diff
+        # self.R = np.diag([1e-3, 1e-3, 1e-1, 1e-1])  # v_error, delta_error, v_diff, delta_diff
+        self.R = np.diag([1, 1, 0, 0])
         self.J = 0
         self.g = []  # currently forced to zero later (system dynamic constraints; multiple shooting)
         self.lbg = []
@@ -79,7 +83,7 @@ class MPC:
             l_r = self.hamster.length_rear
             alpha_ref = -ca.asin(kappa * l_r)
             delta_ref = L/l_r * ca.asin(kappa*l_r)
-            con_error = con - ca.vertcat(delta_ref, self.P[-1])
+            con_error = con - ca.vertcat( self.P[-1],delta_ref)
             con_diff = con - con_pre
             con_pre = con
             con_join = ca.vertcat(con_error, con_diff)
@@ -168,9 +172,13 @@ class MPC:
         sim_iter = int(self.sim_time * self.controller_freq)
         # x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
         x0x = ca.repmat(x_init, (self.N + 1))
-        x0u = ca.repmat([0.6, self.hamster.length_front * self.kappa_ref], self.N)
+        kappa = self.interpolator(x_init[0]).full()
+        L =self.hamster.length_front + self.hamster.length_rear
+        l_r = self.hamster.length_rear
+        x0u = ca.repmat([0.6, L/l_r * ca.asin(kappa*l_r)], self.N)
         x0 = ca.vertcat(x0x, x0u)
         for i in range(sim_iter):
+            self.X_opt.append(x_init)
             x0, con, cal_time, status, U_OCP, X_OCP = self.predict(x0, list(x_init))
             self.time_list.append(cal_time)
             self.OCP_results_X.append(X_OCP)
@@ -199,7 +207,7 @@ class MPC:
                 print("start next round ", x_init[0])
                 x_init[0] -= self.constraints.s_limit
 
-            self.X_opt.append(x_init)
+            
             self.U_opt.append(con)
         print("finished simulation")
         print(f"average cal time: {sum(self.time_list) / len(self.time_list)}")
@@ -231,7 +239,7 @@ if __name__ == "__main__":
     path_name = 'test_traj_mpc'
     # path_name = 'val_traj_mpc'
     # path_name = 'val_traj_mpc_simple'
-    path_name = 'test_traj_mpc_refine'
+    #path_name = 'test_traj_mpc_refine'
     mpc = MPC(path_name)
     mpc.sim()
     plo = SimPlotter(path_name)
