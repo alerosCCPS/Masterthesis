@@ -13,11 +13,16 @@ class Eval:
         self.root_path = Script_Root
         self.traj_list = [
             "test_traj",
-            'val_traj'
+            # 'val_traj'
                         ]
-        self.controller_list = {"mpc":['mpc', 'mpc_simple', 'mpc_adapted', 'mpc_adapted_simple'],
-                                "gp":['2D', '3D',
-                                      # '2D_LF', '3D_LF'
+        self.controller_list = {"mpc":[
+            # 'mpc', 'mpc_simple',
+            # 'mpc_adapted', 'mpc_adapted_simple',
+            # 'mpc_noBeta', 'mpc_noBeta_simple'
+        ],
+                                "gp":[
+                                    '2D', '3D',
+                                      '2D_LF', '3D_LF'
                                       ]}
         self.columns = ["traj_name"] + self.controller_list['mpc'] + self.controller_list['gp']
         self.row_title = self.traj_list
@@ -85,5 +90,5 @@ if __name__ == "__main__":
     evaluator = Eval(sim=sim)
     evaluator.eval()
     filename = "eval_sim.csv" if sim else "eval_real.csv"
-    plotter(filename)
+    # plotter(filename)
 

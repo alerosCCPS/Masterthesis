@@ -36,7 +36,7 @@ class MPC_Fine:
     def __init__(self, path_name='test_traj'):
         self.No_track = False
         self.kappa_ref = 1
-        self.x_init = [0, 0, 0, 0.6]
+        self.x_init = [0, 0, 0, 0]
         self.path_name = path_name
         self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)

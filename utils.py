@@ -49,11 +49,11 @@ class ReSampler:
                 self.resample(root_path)
 class Criteria:
     def __init__(self,data_path):
-        self.length_max = 800
+        self.length_max = 690
         self.data_path = data_path
-        self.factor_n = 1e-2
+        self.factor_n = 1e0
         self.factor_alpha = 0
-        self.factor_u = 1e-1
+        self.factor_u = 1e-2
         # self.factor_u = 0
 
     @property

@@ -71,8 +71,8 @@ class CommPub(Node):
         if elapsed_time > 8:
             self.save_data()
             self.destroy_node()
-        self.velocity = 0.6
-        self.delta = 25.0
+        self.velocity = 0.4
+        self.delta = -12.0
 
 
     def callback(self):
@@ -96,11 +96,13 @@ class CommPub(Node):
     def listener_callback(self, msg):
         x,y,z = msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z
         # r_x, r_y, r_z = self.velocity / x if abs(x)>1e-4 else 0
+
         r_y = self.velocity / abs(y) if abs(y)>1e-4 else 0
         r_y = 0 if r_y>2 else r_y
+        self.get_logger().info(f" r_y: {r_y}")
         # r_z =self.velocity / abs(z) if abs(z) > 1e-4 else 0
         # self.get_logger().info(f"r_x: {r_x}, r_y: {r_y}, r_z: {r_z}")
-        self.get_logger().info(f" r_y: {r_y}")
+        # self.get_logger().info(f" r_y: {r_y}")
         # self.rx.append(r_x)
         self.ry.append(r_y)
         # self.rz.append(r_z)
@@ -114,7 +116,7 @@ class CommPub(Node):
         ry.append(av)
         # rz = self.rz[::10]
         # pd.DataFrame(rx).to_csv(os.path.join(self.data_path, 'rx.csv'),index=False)
-        file_name = f"velocity0_{str(self.velocity).split('.')[-1]}_delta_f{int(self.delta)}.csv"
+        file_name = f"velocity0_{str(self.velocity).split('.')[-1]}_delta_{int(abs(self.delta))}.csv"
         pd.DataFrame(ry).to_csv(os.path.join(self.data_path, file_name), index=False)
         # pd.DataFrame(rz).to_csv(os.path.join(self.data_path, 'rz.csv'),index=False)
         self.get_logger().info(f"saving {file_name}")

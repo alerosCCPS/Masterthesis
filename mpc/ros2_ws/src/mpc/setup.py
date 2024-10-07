@@ -22,7 +22,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "controller_handle=mpc.mpc_node:start_controller"
+            "controller_handle=mpc.mpc_node:start_controller",
+            "controller_noBeta=mpc.mpc_noBeta:start_controller"
         ],
     },
 )

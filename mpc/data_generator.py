@@ -26,8 +26,8 @@ class DataGen:
         self.targ_vel = 0.4
         self.max_steer = deg2R(25)
         self.L = 0.25
-        self.steer_k1 = 2.2
-        self.steer_k2 = 5
+        self.steer_k1 = 2.25
+        self.steer_k2 = 4
         self.length_rear = 0.125
         self.look_fw_dis = 0.15
         self.data_root = os.path.join(Script_Root, "DATA", case_name)
@@ -52,6 +52,7 @@ class DataGen:
         self.mpc = MPC(case_name)
         self.N = self.mpc.N
         self.data = []
+        print(f"simple mode: {self.mpc.simple_mode}")
 
     def generator(self):
         sample_steps = max(1, int(self.constrains.s_limit / self.sample_dis))

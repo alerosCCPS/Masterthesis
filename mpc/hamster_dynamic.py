@@ -21,19 +21,19 @@ def get_hamster_model(path_file_name='circle'):
     # model.mass = 1.5  # kg
     model.length_front = 0.125  # m
     model.length_rear = 0.125  # m
-    model.steer_k1 = 2.2
-    model.steer_k2 = 5
+    model.L = (model.length_rear + model.length_front)
+    model.steer_k1 = 2.25
+    model.steer_k2 = 4
     # model.steer_theory_max = deg2R(28)
     model.T = 0.00984
 
     def dynamic_f(x, u, kappa):
         s, n, alpha, v = x[0], x[1], x[2], x[3]
         v_command, delta = u[0], u[1]
-        L=(model.length_rear+model.length_front)
+
         # delta = ca.arctan(model.steer_k1*L*ca.tanh(model.steer_k2*delta))
-        delta = model.steer_k1 * L * ca.tanh(model.steer_k2 * delta)
-        # delta = ca.if_else(delta>model.steer_theory_max, model.steer_theory_max, delta)
-        # delta = ca.if_else(delta<-model.steer_theory_max, -model.steer_theory_max, delta)
+        delta = model.steer_k1 * model.L * ca.tanh(model.steer_k2 * delta)
+
         beta = 0.5*delta
         s_dot = v*ca.cos(alpha+beta)/(1-n*kappa)
         n_dot = v*ca.sin(alpha+beta)
@@ -47,7 +47,6 @@ def get_hamster_model(path_file_name='circle'):
     alpha = ca.MX.sym("alpha")
     v = ca.MX.sym("v")
     x = ca.vertcat(s, n, alpha, v)
-
     kappa = ca.MX.sym("kappa")
 
     # control vector
@@ -56,10 +55,8 @@ def get_hamster_model(path_file_name='circle'):
     u = ca.vertcat(v_comm, delta)
 
     rhs = dynamic_f(x, u, kappa)
-
     model.dynamic = ca.Function("dynamic", [x,u, kappa], [rhs])
 
-<<<<<<< HEAD
     constraints = types.SimpleNamespace()
     constraints.s_limit = path_length  # total curve length
     constraints.n_limit = 0.25  # distance bias
@@ -70,16 +67,6 @@ def get_hamster_model(path_file_name='circle'):
     constraints.v_comm_limit = 0.6# 0.6
     constraints.targ_vel = 0.5
     constraints.delta_limit = deg2R(30)  # 30 degree
-=======
-    constrains = types.SimpleNamespace()
-    constrains.s_limit = path_length  # total curve length
-    constrains.n_limit = 0.1 #ca.inf#0.1  # distance bias
-    constrains.alpha_limit = ca.pi*0.5 #ca.inf#ca.pi*0.5
-    # constrains.n_limit = 1e-2  # distance bias
-    # constrains.alpha_limit = 1e-2
-    constrains.v_limit = 1#0.6  # m/s
-    constrains.v_comm_limit = 1# 0.6
-    constrains.delta_limit = deg2R(45)#deg2R(90)#deg2R(28)  # 28 degree
->>>>>>> cf92cca88c64aaf1a0ae10aa1bec3aa9044f49aa
+
 
     return model, constraints

@@ -16,8 +16,8 @@ def test_gp_3D():
     # sampler = Sampler(sample_rate=0.1)
     # sampler.sampling()
 
-    # trainer = Tra3D(case_name)
-    # trainer.process()
+    trainer = Tra3D(case_name)
+    trainer.process()
 
     simulator = Sim3D(case_name=case_name, reversed=reversed)
     simulator.start_sim()
@@ -52,8 +52,8 @@ def test_gp_3D_LF():
     # sampler = Sampler(sample_rate=0.1)
     # sampler.sampling()
     #
-    # trainer = Tra3DLF(case_name)
-    # trainer.process()
+    trainer = Tra3DLF(case_name)
+    trainer.process()
 
     simulator = Sim3DLF(case_name=case_name, reversed=reversed)
     simulator.start_sim()
@@ -70,8 +70,8 @@ def test_gp_2D_LF():
     # sampler = Sampler(sample_rate=0.1)
     # sampler.sampling()
     #
-    # trainer = Tra2DLF(case_name)
-    # trainer.process()
+    trainer = Tra2DLF(case_name)
+    trainer.process()
 
     simulator = Sim2DLF(case_name=case_name, reversed=reversed)
     simulator.start_sim()
@@ -81,7 +81,7 @@ def test_gp_2D_LF():
     replot = ResultePlotter(case_name)
     replot.plot()
 
-# test_gp_3D()
+test_gp_3D()
 test_gp_2D()
-# test_gp_3D_LF()
-# test_gp_2D_LF()
+test_gp_3D_LF()
+test_gp_2D_LF()

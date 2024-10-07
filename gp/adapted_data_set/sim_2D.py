@@ -20,8 +20,8 @@ class Simulator:
     def __init__(self, case_name="test_traj",data_file="train_data", reversed=False):
         self.reversed = reversed
         self.k = 0.25
-        self.steer_k1 = 2.2
-        self.steer_k2 = 5
+        self.steer_k1 = 2.25
+        self.steer_k2 = 4
         self.length_rear = 0.125
         self.T = 0.00984
         self.L = 0.25
