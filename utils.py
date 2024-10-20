@@ -49,11 +49,12 @@ class ReSampler:
                 self.resample(root_path)
 class Criteria:
     def __init__(self,data_path):
-        self.length_max = 690
+        self.length_max = 650
         self.data_path = data_path
-        self.factor_n = 1e0
+        self.factor_n = 1e-1
+        # self.factor_n = 0
         self.factor_alpha = 0
-        self.factor_u = 1e-2
+        self.factor_u = 1e-1
         # self.factor_u = 0
 
     @property
@@ -63,13 +64,18 @@ class Criteria:
         alpha = df['alpha'].to_numpy()
         delta = df['delta'].to_numpy()
 
+
         if len(alpha) > self.length_max:
             alpha = alpha[:self.length_max]
         if len(delta) > self.length_max:
             delta = delta[:self.length_max]
         print(f"evaluating from {self.data_path}, with {len(alpha)} sample points")
         d_delta = np.gradient(delta)
-        return sum(abs(n)*self.factor_n) + sum(abs(alpha)*self.factor_alpha) + sum(abs(d_delta)*self.factor_u)
+        v = sum(abs(n)*self.factor_n) + sum(abs(alpha)*self.factor_alpha) + sum(abs(d_delta)*self.factor_u)
+        print(v)
+        # time_list = df["time"].values
+        # print(v, f"with average cal time:{sum(time_list)/len(time_list)}")
+        return v
 
 def check_path(path):
     if not os.path.exists(path):

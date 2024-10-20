@@ -48,17 +48,10 @@ class Process:
         plt.ylabel("Curvature")
         plt.title("Experimental Results ")
         plt.legend()
-        plt.savefig(os.path.join(self.data_root,"..", "steering_calib.jpg"))
+        plt.savefig(os.path.join(self.data_root,"..", "steering_calib.pdf"))
         plt.show()
 
 
 if __name__ == "__main__":
-    # print(math.sin())
     pro = Process()
     pro.process()
-    # r2Deg = lambda x: 180 * x / math.pi
-    # k1, k2 = 2, 6
-    # L=0.25
-    # delta1=25
-    # delta2 = r2Deg(k1*L*math.tanh(k2*deg2R(delta1)))
-    # print(delta2)

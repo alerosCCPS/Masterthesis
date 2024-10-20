@@ -7,8 +7,8 @@ sys.path.append(os.path.join(Script_Root,".."))
 from scipy.interpolate import splev, splrep
 from utils import check_path
 from hamster_dynamic import get_hamster_model
-# from mpc.mpc_controller import MPC
-from mpc.adapted_mpc_controller import MPC
+from mpc.mpc_controller import MPC
+# from mpc.adapted_mpc_controller import MPC
 import casadi as ca
 import math
 
@@ -37,7 +37,7 @@ class DataGen:
             return splev(s,tck=tck)
         self.kappa_of_s = f
 
-        self.save_root = os.path.join(self.data_root, "synthetic_adapted")
+        self.save_root = os.path.join(self.data_root, "synthetic_redo")
         check_path(self.save_root)
         _, self.constrains = get_hamster_model(case_name)
         self.sample_dis = 0.5

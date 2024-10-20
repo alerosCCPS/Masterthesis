@@ -5,6 +5,7 @@ from scipy.interpolate import splev, splrep
 import time
 from visualization import SimPlotter, ResultePlotter
 from hamster_dynamic import get_hamster_model, load_path
+import matplotlib.pyplot as plt
 from ekf import EKF
 import os
 
@@ -16,7 +17,7 @@ class MPC:
     def __init__(self, path_name='test_traj'):
         self.No_track = False
         self.kappa_ref = 0
-        self.x_init = [0, 0, 0, 0]
+        self.x_init = [2.5+0.01, 0, 0, 0]
         self.path_name = path_name
         self.interpolator, _, self.s_max = load_path(self.path_name)
         self.save_root = os.path.join(Script_Root, "DATA", path_name)
@@ -24,10 +25,10 @@ class MPC:
         self.hamster, self.constraints = get_hamster_model(path_name)
         self.sim_time, self.controller_freq = 20, 60  # second, Hz
         self.sample_time = 0.1
-        self.N = 10
+        self.N = 20
         self.nu = 2
         self.nx = 4
-        self.simple_mode = True
+        self.simple_mode = False
         self.X = ca.MX.sym("X", self.nx, self.N + 1)
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx) 
@@ -40,7 +41,7 @@ class MPC:
         # self.Q = np.diag([0, 1, 1, 1e-1])
         # self.QN = np.diag([0, 1, 1, 1e-1])
         # self.R = np.diag([1e-1, 1e-1])
-        self.R = np.diag([0, 0])
+        self.R = np.diag([0, 1e-3])
         self.J = 0
         self.g = [] # currently forced to zero later (system dynamic constraints; multiple shooting)
         self.lbg = []
@@ -137,14 +138,16 @@ class MPC:
         
         # store all OCP results
         status = self.solver.stats() # solver status
+        status_flag = True
         if status['return_status'] == 'Infeasible_Problem_Detected':
             print("OCP seems to be infeasible, please check carefully")
+            status_flag = False
             
         U_OCP = con # planned input sequence
         X_OCP = ca.reshape(x0_res[0:self.nx * (self.N + 1)], self.nx, self.N+1).full() #predicted state sequence
         u_star = con[:,0]
         u_star[0] = 0.2 if u_star[0]<0.2 else u_star[0]
-        return x0_res, u_star, cal_time, status, U_OCP, X_OCP
+        return x0_res, u_star, cal_time, status, U_OCP, X_OCP, status_flag
 
     def sim(self):
 
@@ -152,13 +155,15 @@ class MPC:
         # x_init = [0, 0.04, 0.05*np.pi, 0]
         x_init = self.x_init#[0, 0, 0, 0] #[0, 0, 0, 0.2]
 
-        sim_iter = int(self.sim_time * self.controller_freq)
+        # sim_iter = int(self.sim_time * self.controller_freq)
         #x0 = ca.repmat(0, self.nx * (self.N + 1) + self.nu * self.N, 1)
         x0x = ca.repmat(x_init,(self.N + 1))
         x0u = ca.repmat([0.6 ,self.hamster.length_front*self.kappa_ref],self.N)
         x0 = ca.vertcat(x0x,x0u)
+        sim_iter = 1
+        self.controller_freq = 10
         for i in range(sim_iter):
-            x0, con, cal_time, status, U_OCP, X_OCP = self.predict(x0, list(x_init))
+            x0, con, cal_time, status, U_OCP, X_OCP,_ = self.predict(x0, list(x_init))
             self.time_list.append(cal_time)
             self.OCP_results_X.append(X_OCP)
             self.OCP_results_U.append(U_OCP)
@@ -188,15 +193,20 @@ class MPC:
             self.X_opt.append(x_init)
             self.U_opt.append(con)
         print("finished simulation")
-        print(f"average cal time: {sum(self.time_list)/len(self.time_list)}")
-        print(f"the worst case: {max(self.time_list)}")
+        # print(f"average cal time: {sum(self.time_list)/len(self.time_list)}")
+        # print(f"the worst case: {max(self.time_list)}")
         
         # was everything feasible?
         self.feasible_iterations = [False if self.Solverstats[n]['return_status'] == 'Infeasible_Problem_Detected' else True  for n in range(len(self.Solverstats))] # maybe there are some cases, where a different solver stat also means infeasible; so take the "true" statement here with care 
         if not all(self.feasible_iterations):
             print("there was an infeasible problem. Please check carefully.")
         else:
-            print('everything seemed to be feasible')    
+            print('everything seemed to be feasible')
+        # print(self.OCP_results_U[0][1])
+
+        df = pd.DataFrame(self.OCP_results_X[0][0])
+        df.to_csv(os.path.join(self.save_root, "sim.csv"), index=False)
+
         #self.save_data()
 
     def save_data(self):
@@ -214,10 +224,11 @@ if __name__ == "__main__":
     # path_name = 'test_traj_reverse'
     # path_name = 'test_traj_mpc'
     # path_name = 'val_traj_mpc'
-    path_name = 'val_traj_mpc_simple'
+    # path_name = 'val_traj_mpc_simple'
+    path_name = 'error'
     mpc = MPC(path_name)
     mpc.sim()
-    plo = SimPlotter(path_name)
-    plo.plot_traj()
-    replot = ResultePlotter(path_name)
-    replot.plot()
+    # plo = SimPlotter(path_name)
+    # plo.plot_traj()
+    # replot = ResultePlotter(path_name)
+    # replot.plot()

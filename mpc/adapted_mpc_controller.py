@@ -38,13 +38,12 @@ class MPC:
         self.U = ca.MX.sym("U", self.nu, self.N)
         self.P = ca.MX.sym("P", 2 * self.nx)
 
-        # self.Q = np.diag([0., 5e2, 1e-1, 1e1])
-        # self.QN = np.diag([0., 1e3, 1e-1, 1e1])
-        # self.R = np.diag([1e-3, 1e-3, 1e1, 1e1])  # v_error, delta_error, v_diff, delta_diff
-
-        self.Q = np.diag([0, 1, 1, 1e-1])
-        self.QN = np.diag([0, 1, 1, 1e-1])
-        self.R = np.diag([1, 1, 1e-1, 1e-1])
+        # self.Q = np.diag([0, 1, 1, 1e-1])
+        # self.QN = np.diag([0, 1, 1, 1e-1])
+        # self.R = np.diag([1, 1, 1e-1, 1e-1])
+        self.Q = np.diag([0, 1e-2, 0, 1e-1])
+        self.QN = np.diag([0, 1e-2, 0, 1e-1])
+        self.R = np.diag([0, 0, 0, 0])
 
         self.J = 0
         self.g = []  # currently forced to zero later (system dynamic constraints; multiple shooting)
@@ -252,8 +251,10 @@ if __name__ == "__main__":
     for p in [
         # 'val_traj_mpc_adapted',
         # 'val_traj_mpc_adapted_simple',
-        'test_traj_mpc_adapted_simple',
+        # 'test_traj_mpc_adapted_simple',
         # 'test_traj_mpc_adapted'
+        # 'test_traj_mpc'
+        'test_traj_mpc_simple'
     ]:
         mpc = MPC(p)
         mpc.sim()

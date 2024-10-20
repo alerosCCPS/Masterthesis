@@ -21,8 +21,10 @@ class Eval:
             # 'mpc_noBeta', 'mpc_noBeta_simple'
         ],
                                 "gp":[
-                                    '2D', '3D',
-                                      '2D_LF', '3D_LF'
+                                    '2D',
+                                    '3D',
+                                      '2D_LF',
+                                    '3D_LF'
                                       ]}
         self.columns = ["traj_name"] + self.controller_list['mpc'] + self.controller_list['gp']
         self.row_title = self.traj_list
@@ -33,7 +35,10 @@ class Eval:
         for con_category in self.controller_list.keys():
             for con_type in self.controller_list[con_category]:
                 if self.sim:
-                    data_path = os.path.join(Script_Root, f"{con_category}", "DATA", f"{traj}_{con_type}",
+                    data_path = os.path.join(Script_Root, f"{con_category}",
+                                             'path_gp',
+                                             # 'traj_gp',
+                                             "DATA", f"{traj}_{con_type}",
                                          f'{con_category}_sim_results.csv')
                 else:
                     data_path = os.path.join(Script_Root, f"{con_category}", "ros2_ws", "src", f"{con_category}",
@@ -68,7 +73,9 @@ def plotter(file_name):
     x_sub = [x_base + i*bar_size for i in range(traj_num)]
     con_list = [
         'mpc', 'mpc_simple',
-        'mpc_adapted', 'mpc_adapted_simple', '2D', '3D']
+        'mpc_adapted', 'mpc_adapted_simple',
+        # 'mpc_noBeta', 'mpc_noBeta_simple',
+        '2D','3D','2D_LF','3D_LF']
     values = []
     for c in con_list:
         v = list(df[c].values)
@@ -77,7 +84,9 @@ def plotter(file_name):
     for i in range(traj_num):
         ax.bar(x_sub[i], [values[j][i] for j in range(con_num)], width=bar_size, label=labels[i])
     ax.set_xticks(x_base+bar_size*(traj_num-1)/2)
-    ax.set_xticklabels(con_list)
+    # x_names = ['mpc', 'mpc_simple','3D', '3D_LF']
+    x_names = ['mpc','mpc_simple','mpc_adapted','mpc_adapted_simple','2D','3D','2D_LF','3D_LF']
+    ax.set_xticklabels(x_names)
     ax.set_xlabel('Controllers')
     ax.set_ylabel('Lost')
     ax.set_title('Performance Evaluation')
@@ -86,7 +95,7 @@ def plotter(file_name):
     plt.show()
 
 if __name__ == "__main__":
-    sim = True
+    sim = False
     evaluator = Eval(sim=sim)
     evaluator.eval()
     filename = "eval_sim.csv" if sim else "eval_real.csv"

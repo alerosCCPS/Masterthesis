@@ -10,10 +10,10 @@ import pandas as pd
 import numpy as np
 
 class GP(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood):
+    def __init__(self, train_x, train_y, likelihood, dim):
         super(GP, self).__init__(train_x, train_y, likelihood)
         self.mean_module = ConstantMean()
-        self.covar_module = ScaleKernel(RBFKernel())
+        self.covar_module = ScaleKernel(RBFKernel(ard_num_dims=dim))
         # self.covar_module = ScaleKernel(MaternKernel(nu=2.5, ard_num_dims=3))
 
     def forward(self, x):
@@ -30,7 +30,7 @@ class GP3D:
         self._load_data()
 
         self.likelihood = GaussianLikelihood(noise_constraint=Interval(1e-3, 0.2)).to(self.data_type)
-        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood).to(self.data_type)
+        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood, dim=3).to(self.data_type)
         self._load_path()
 
     def _load_data(self):
@@ -67,7 +67,7 @@ class GP3D_LF:
         self._load_data()
 
         self.likelihood = GaussianLikelihood(noise_constraint=Interval(1e-3, 0.2)).to(self.data_type)
-        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood).to(self.data_type)
+        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood, dim=4).to(self.data_type)
         self._load_path()
 
     def _load_data(self):
@@ -105,7 +105,7 @@ class GP2D:
         self._load_data()
 
         self.likelihood = GaussianLikelihood(noise_constraint=Interval(1e-3, 0.2)).to(self.data_type)
-        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood).to(self.data_type)
+        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood, dim=2).to(self.data_type)
         self._load_path()
 
     def _load_data(self):
@@ -141,7 +141,7 @@ class GP2D_LF:
         self._load_data()
 
         self.likelihood = GaussianLikelihood(noise_constraint=Interval(1e-3, 0.2)).to(self.data_type)
-        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood).to(self.data_type)
+        self.model = GP(train_x=self.data_x, train_y=self.data_y, likelihood=self.likelihood, dim=3).to(self.data_type)
         self._load_path()
 
     def _load_data(self):

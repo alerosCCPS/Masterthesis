@@ -10,6 +10,7 @@ import pandas as pd
 import time
 import json
 import os
+import math
 
 Script_Root = os.path.abspath(os.path.dirname(__file__))
 deg2R = lambda x: np.pi*(x/180)
@@ -23,6 +24,8 @@ class Controller_GP2D(Node):
         super().__init__(name)
         self.wheel_base = 0.25
         self.local_kappa = 0
+        self.steer_k1 = 2.25
+        self.steer_k2 = 4
         self.data_type = torch.float32
         self.get_logger().info("create Controller Node !")
         # self.data_root = os.path.join(Script_Root, "DATA",f"test_traj_2D")
@@ -78,7 +81,7 @@ class Controller_GP2D(Node):
     def controller_callback(self):
         self.msg_stamped.header.stamp = self.get_clock().now().to_msg()
         start = time.time()
-        u = self.local_kappa * self.wheel_base + self.mpc.predict(x=self.x)
+        u = math.atanh(self.local_kappa/ self.steer_k1)/self.steer_k2 + self.mpc.predict(x=self.x)
         duration = time.time() -start
 
         self.msg_stamped.drive.speed = self.target_v

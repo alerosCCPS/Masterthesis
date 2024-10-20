@@ -228,10 +228,10 @@ class MPC:
 
 if __name__ == "__main__":
     for p in [
-        # 'val_traj_mpc_adapted',
-        # 'val_traj_mpc_adapted_simple',
         # 'test_traj_mpc_noBeta_simple'
-        'test_traj_mpc_noBeta'
+        # 'test_traj_mpc_noBeta',
+        'val_traj_mpc_noBeta',
+        'val_traj_mpc_noBeta_simple'
     ]:
         mpc = MPC(p)
         mpc.sim()
